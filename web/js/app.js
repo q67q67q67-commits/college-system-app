@@ -3,7 +3,9 @@
  * Палитра: #a82523, #d50032 (сайт университета)
  */
 
-const API_BASE = '';
+const API_BASE = (typeof window !== 'undefined' && window.location?.origin && window.location.origin.startsWith('http'))
+  ? window.location.origin
+  : 'http://localhost:8080';
 
 let state = {
   token: null,
@@ -12,21 +14,27 @@ let state = {
   chatWs: null,
   chatMessages: [],
   forumTopicId: null,
-  forumTopic: null
+  forumTopic: null,
+  notesNoteId: null,
+  notesNote: null,
+  directorPostId: null,
+  directorPost: null
 };
 
 // ——— API ———
-function getAuthHeaders() {
-  const h = { 'Content-Type': 'application/json' };
+function getAuthHeaders(includeContentType = true) {
+  const h = {};
+  if (includeContentType) h['Content-Type'] = 'application/json';
   if (state.token) h['Authorization'] = 'Bearer ' + state.token;
   return h;
 }
 
 async function api(path, options = {}) {
   const url = path.startsWith('http') ? path : API_BASE + path;
+  const hasBody = options.body != null && options.body !== '';
   const res = await fetch(url, {
     ...options,
-    headers: { ...getAuthHeaders(), ...(options.headers || {}) }
+    headers: { ...getAuthHeaders(hasBody), ...(options.headers || {}) }
   });
   if (res.status === 401) {
     logout();
@@ -70,21 +78,19 @@ function clearStored() {
 
 // ——— Навигация ———
 const PAGES = [
-  { id: 'home', title: 'Главная', icon: '🏠', roles: ['student', 'teacher', 'director', 'admin'] },
-  { id: 'schedule', title: 'Расписание', icon: '📅', roles: ['student', 'teacher', 'director', 'admin'] },
-  { id: 'grades', title: 'Оценки', icon: '📊', roles: ['student'] },
-  { id: 'groups', title: 'Группы', icon: '👥', roles: ['teacher', 'director', 'admin'] },
-  { id: 'teacherGrades', title: 'Выставить оценку', icon: '✏️', roles: ['teacher', 'director', 'admin'] },
-  { id: 'teacherHomework', title: 'ДЗ к парам', icon: '📋', roles: ['teacher', 'director', 'admin'] },
-  { id: 'library', title: 'Библиотека', icon: '📚', roles: ['student', 'teacher', 'director', 'admin'] },
-  { id: 'forum', title: 'Форум', icon: '💬', roles: ['student', 'teacher', 'director', 'admin'] },
-  { id: 'events', title: 'События', icon: '📌', roles: ['student', 'teacher', 'director', 'admin'] },
-  { id: 'files', title: 'Мои файлы', icon: '📁', roles: ['student', 'teacher', 'director', 'admin'] },
-  { id: 'chat', title: 'Чат', icon: '💭', roles: ['student', 'teacher', 'director', 'admin'] },
-  { id: 'directorProfile', title: 'Профиль директора', icon: '👔', roles: ['student', 'teacher', 'director'] },
-  { id: 'regulations', title: 'Регламент', icon: '📜', roles: ['student', 'teacher', 'director', 'admin'] },
-  { id: 'map', title: 'Карта здания', icon: '🗺️', roles: ['student', 'teacher', 'director', 'admin'] },
-  { id: 'profile', title: 'Профиль', icon: '👤', roles: ['student', 'teacher', 'director', 'admin'] }
+  { id: 'home', title: 'Главная', icon: '', roles: ['student', 'teacher', 'director', 'admin'] },
+  { id: 'schedule', title: 'Расписание', icon: '', roles: ['student', 'teacher'] },
+  { id: 'grades', title: 'Оценки', icon: '', roles: ['student'] },
+  { id: 'groups', title: 'Группы', icon: '', roles: ['teacher', 'director', 'admin'] },
+  { id: 'teacherGrades', title: 'Выставить оценку', icon: '', roles: ['teacher'] },
+  { id: 'teacherHomework', title: 'ДЗ к парам', icon: '', roles: ['teacher'] },
+  { id: 'forum', title: 'Форум', icon: '', roles: ['student', 'teacher', 'director', 'admin'] },
+  { id: 'events', title: 'События', icon: '', roles: ['student', 'teacher', 'director', 'admin'] },
+  { id: 'notes', title: 'Мои заметки', icon: '', roles: ['student', 'teacher', 'director', 'admin'] },
+  { id: 'directorProfile', title: 'Профиль директора', icon: '', roles: ['student', 'teacher', 'director'] },
+  { id: 'regulations', title: 'Регламент', icon: '', roles: ['student', 'teacher', 'director', 'admin'] },
+  { id: 'map', title: 'Карта здания', icon: '', roles: ['student', 'teacher', 'director', 'admin'] },
+  { id: 'profile', title: 'Профиль', icon: '', roles: ['student', 'teacher', 'director', 'admin'] }
 ];
 
 function navItems() {
@@ -98,8 +104,8 @@ function renderNav() {
   if (nav) {
     nav.innerHTML = items.map(p => `
       <button class="nav-item ${state.currentPage === p.id ? 'active' : ''}" data-page="${p.id}">
-        <span>${p.icon}</span>
-        <span style="margin-left: 0.5rem">${p.title}</span>
+        ${p.icon ? `<span>${p.icon}</span>` : ''}
+        <span style="${p.icon ? 'margin-left: 0.5rem' : ''}">${p.title}</span>
       </button>
     `).join('');
     nav.querySelectorAll('.nav-item').forEach(el => {
@@ -110,7 +116,7 @@ function renderNav() {
   if (bottomInner) {
     bottomInner.innerHTML = items.map(p => `
       <button type="button" class="nav-item ${state.currentPage === p.id ? 'active' : ''}" data-page="${p.id}">
-        <span>${p.icon}</span>
+        ${p.icon ? `<span>${p.icon}</span>` : ''}
         <span>${p.title}</span>
       </button>
     `).join('');
@@ -138,11 +144,9 @@ function goTo(pageId) {
   else if (pageId === 'groups') loadGroups();
   else if (pageId === 'teacherGrades') loadTeacherGrades();
   else if (pageId === 'teacherHomework') loadTeacherHomework();
-  else if (pageId === 'library') loadLibrary();
   else if (pageId === 'forum') loadForum();
   else if (pageId === 'events') loadEvents();
-  else if (pageId === 'files') loadFiles();
-  else if (pageId === 'chat') loadChat();
+  else if (pageId === 'notes') loadNotes();
   else if (pageId === 'directorProfile') loadDirectorProfile();
   else if (pageId === 'regulations') loadRegulations();
   else if (pageId === 'map') loadMap();
@@ -239,13 +243,14 @@ function loadGrades() {
     document.getElementById('content').innerHTML = `
       <div class="card">
         <h3>Журнал оценок</h3>
-        <p><strong>GPA:</strong> ${gpa}</p>
+        <p><strong>Средний балл (GPA):</strong> ${gpa}</p>
+        <p class="meta">Оценки по 100-балльной шкале</p>
         ${Array.isArray(list) && list.length
           ? list.map(g => `
             <div class="list-item">
               <div>
                 <strong>${escapeHtml(g.subject)}</strong>
-                <p class="meta">${g.grade_date} — ${g.grade} ${g.comment ? ' · ' + escapeHtml(g.comment) : ''}</p>
+                <p class="meta">${formatDate(g.grade_date)} — ${g.grade} баллов ${g.comment ? ' · ' + escapeHtml(g.comment) : ''}</p>
               </div>
             </div>
           `).join('')
@@ -281,8 +286,8 @@ function loadTeacherGrades() {
           <input type="number" id="tg-grade" min="0" max="100" step="0.5" placeholder="85">
         </div>
         <div class="form-row">
-          <label>Дата (YYYY-MM-DD)</label>
-          <input type="date" id="tg-date" value="${new Date().toISOString().slice(0, 10)}">
+          <label>Дата (ДД/ММ/ГГГГ)</label>
+          <input type="text" id="tg-date" placeholder="31/01/2026" value="${formatDate(new Date().toISOString())}">
         </div>
         <div class="form-row">
           <label>Комментарий</label>
@@ -307,9 +312,11 @@ function loadTeacherGrades() {
       const userId = studentSel.value;
       const scheduleId = document.getElementById('tg-schedule').value;
       const grade = parseFloat(document.getElementById('tg-grade').value);
-      const gradeDate = document.getElementById('tg-date').value;
+      const gradeDateInput = document.getElementById('tg-date').value.trim();
+      const gradeDate = parseDDMMYYYY(gradeDateInput) || gradeDateInput;
       const comment = document.getElementById('tg-comment').value.trim();
       if (!userId || !scheduleId || isNaN(grade)) { alert('Заполните группу, студента, занятие и оценку'); return; }
+      if (!gradeDate) { alert('Введите дату в формате ДД/ММ/ГГГГ'); return; }
       api('/api/grades', {
         method: 'POST',
         body: JSON.stringify({ user_id: parseInt(userId, 10), schedule_id: parseInt(scheduleId, 10), grade, grade_date: gradeDate, comment: comment || '' })
@@ -411,19 +418,36 @@ function loadGroups() {
                 <strong>${escapeHtml(g.name)}</strong>
                 <p class="meta">${escapeHtml(g.description || '')} · Студентов: ${g.student_count ?? 0}</p>
               </div>
-              <button class="btn btn-small btn-secondary" data-group-id="${g.id}">Студенты</button>
+              <button class="btn btn-small btn-secondary btn-group-students" data-group-id="${g.id}" data-group-name="${escapeHtml(g.name)}">Студенты</button>
             </div>
           `).join('')
           : '<p class="empty-state">Нет групп</p>'}
       </div>
+      <div id="students-panel" class="card hidden">
+        <h3 id="students-panel-title">Студенты группы</h3>
+        <div id="students-panel-list"></div>
+        <button type="button" class="btn btn-text btn-small" id="students-panel-close">Закрыть</button>
+      </div>
     `;
-    document.getElementById('content').querySelectorAll('[data-group-id]').forEach(btn => {
+    document.getElementById('content').querySelectorAll('.btn-group-students').forEach(btn => {
       btn.addEventListener('click', () => {
         const id = btn.dataset.groupId;
+        const name = btn.dataset.groupName || '';
         api('/api/groups/' + id + '/students').then(students => {
-          alert(students.map(s => s.full_name + ' (' + s.email + ')').join('\n') || 'Нет студентов');
+          const panel = document.getElementById('students-panel');
+          const listEl = document.getElementById('students-panel-list');
+          document.getElementById('students-panel-title').textContent = 'Студенты: ' + name;
+          listEl.innerHTML = Array.isArray(students) && students.length
+            ? students.map(s => `<div class="list-item"><div><strong>${escapeHtml(s.full_name)}</strong><p class="meta">${escapeHtml(s.email || '')}</p></div></div>`).join('')
+            : '<p class="empty-state">Нет студентов</p>';
+          panel.classList.remove('hidden');
+        }).catch(err => {
+          alert(err.message);
         });
       });
+    });
+    document.getElementById('students-panel-close').addEventListener('click', () => {
+      document.getElementById('students-panel').classList.add('hidden');
     });
   }).catch(err => {
     document.getElementById('content').innerHTML = `<p class="error-msg">${escapeHtml(err.message)}</p>`;
@@ -468,26 +492,36 @@ function loadLibrary() {
           `).join('')
           : '<p class="empty-state">Ничего не найдено</p>');
         wrap.querySelectorAll('[data-book-id]').forEach(btn => {
-          btn.addEventListener('click', () => reserveBook(btn.dataset.bookId));
+          btn.addEventListener('click', function() { reserveBook(this.dataset.bookId, this); });
         });
       });
     });
     document.getElementById('content').querySelectorAll('[data-book-id]').forEach(btn => {
-      btn.addEventListener('click', () => reserveBook(btn.dataset.bookId));
+      btn.addEventListener('click', function() { reserveBook(this.dataset.bookId, this); });
     });
   }).catch(err => {
     document.getElementById('content').innerHTML = `<p class="error-msg">${escapeHtml(err.message)}</p>`;
   });
 }
 
-function reserveBook(bookId) {
+function reserveBook(bookId, btnEl) {
+  if (btnEl) {
+    btnEl.disabled = true;
+    btnEl.textContent = '...';
+  }
   api('/api/library/reservations', {
     method: 'POST',
     body: JSON.stringify({ book_id: parseInt(bookId, 10) })
   }).then(() => {
     alert('Бронь создана');
     loadLibrary();
-  }).catch(err => alert(err.message));
+  }).catch(err => {
+    alert(err.message || 'Ошибка бронирования');
+    if (btnEl) {
+      btnEl.disabled = false;
+      btnEl.textContent = 'Забронировать';
+    }
+  });
 }
 
 function loadForum() {
@@ -503,9 +537,9 @@ function loadForum() {
           <p class="meta">${topic.is_anonymous ? 'Анонимно' : (topic.author_name || '')} · ${formatDate(topic.created_at)}</p>
           <h4 style="margin-top:1rem">Ответы (${reps.length})</h4>
           <div id="forum-replies">${reps.map(r => `
-            <div class="list-item">
-              <div>${escapeHtml(r.body || '')}</div>
-              <p class="meta">${r.is_anonymous ? 'Анонимно' : (r.author_name || '')} · ${formatDate(r.created_at)}</p>
+            <div class="list-item forum-reply-item" data-post-id="${r.id}">
+              <div>${r.media_url ? `<img src="${API_BASE}${r.media_url}" alt="" style="max-width:200px;max-height:150px;border-radius:2px">` : ''}${escapeHtml(r.body || '')}</div>
+              <p class="meta">${r.is_anonymous ? 'Анонимно' : (r.author_id ? `<span class="forum-author-click" data-user-id="${r.author_id}">${escapeHtml(r.author_name || '')}</span>` : escapeHtml(r.author_name || ''))} · ${formatDate(r.created_at)}</p>
             </div>
           `).join('')}</div>
           <div class="card" style="margin-top:1rem">
@@ -528,6 +562,10 @@ function loadForum() {
           method: 'POST',
           body: JSON.stringify({ parent_id: state.forumTopicId, title: null, body, is_anonymous: isAnonymous })
         }).then(() => { document.getElementById('forum-reply-body').value = ''; loadForum(); }).catch(err => alert(err.message));
+      });
+      document.querySelectorAll('.forum-author-click').forEach(el => {
+        el.style.cursor = 'pointer';
+        el.addEventListener('click', () => showUserProfile(el.dataset.userId));
       });
     }).catch(err => {
       document.getElementById('content').innerHTML = `<p class="error-msg">${escapeHtml(err.message)}</p>`;
@@ -567,7 +605,7 @@ function loadForum() {
           <div>
             <strong>${escapeHtml(p.title || '(без заголовка)')}</strong>
             <p class="meta">${escapeHtml((p.body || '').slice(0, 120))}...</p>
-            <p class="meta">${p.is_anonymous ? 'Анонимно' : (p.author_name || '')} · ${formatDate(p.created_at)}</p>
+            <p class="meta">${p.is_anonymous ? 'Анонимно' : (p.author_id ? `<span class="forum-author-click" data-user-id="${p.author_id}">${escapeHtml(p.author_name || '')}</span>` : escapeHtml(p.author_name || ''))} · ${formatDate(p.created_at)}</p>
           </div>
         </div>
       `).join('')
@@ -580,6 +618,10 @@ function loadForum() {
         state.forumTopic = p;
         loadForum();
       });
+    });
+    topicsEl.querySelectorAll('.forum-author-click').forEach(el => {
+      el.style.cursor = 'pointer';
+      el.addEventListener('click', (e) => { e.stopPropagation(); showUserProfile(el.dataset.userId); });
     });
     document.getElementById('forum-new-topic').addEventListener('click', () => {
       document.getElementById('forum-form').classList.remove('hidden');
@@ -641,7 +683,7 @@ function loadEvents() {
       <h3>Новое событие</h3>
       <div class="form-row"><label>Название</label><input type="text" id="ev-title"></div>
       <div class="form-row"><label>Описание</label><textarea id="ev-desc"></textarea></div>
-      <div class="form-row"><label>Дата (YYYY-MM-DD)</label><input type="text" id="ev-date" placeholder="2026-02-15"></div>
+      <div class="form-row"><label>Дата (ДД/ММ/ГГГГ)</label><input type="text" id="ev-date" placeholder="15/02/2026"></div>
       <div class="form-row"><label>Место</label><input type="text" id="ev-location"></div>
       <button class="btn btn-primary" id="ev-submit">Создать</button>
       <button class="btn btn-text" id="ev-cancel">Отмена</button>
@@ -652,8 +694,8 @@ function loadEvents() {
       <h3>События и новости</h3>
       <div class="form-row" style="display:flex;flex-wrap:wrap;gap:0.5rem;margin-bottom:0.5rem">
         <input type="text" id="events-q" placeholder="Поиск по названию..." style="max-width:200px">
-        <input type="date" id="events-from" placeholder="От">
-        <input type="date" id="events-to" placeholder="До">
+        <input type="text" id="events-from" placeholder="От (ДД/ММ/ГГГГ)">
+        <input type="text" id="events-to" placeholder="До (ДД/ММ/ГГГГ)">
         <button type="button" class="btn btn-small btn-secondary" id="events-filter">Фильтр</button>
       </div>
       ${isAdmin ? '<button class="btn btn-primary btn-small" id="events-add">Добавить</button>' : ''}
@@ -666,17 +708,20 @@ function loadEvents() {
   });
   document.getElementById('events-filter').addEventListener('click', () => {
     const q = document.getElementById('events-q').value.trim();
-    const from = document.getElementById('events-from').value;
-    const to = document.getElementById('events-to').value;
-    fetchEvents({ q: q || undefined, from: from || undefined, to: to || undefined }).then(renderEventsList).catch(err => alert(err.message));
+    const fromRaw = document.getElementById('events-from').value.trim();
+    const toRaw = document.getElementById('events-to').value.trim();
+    const from = fromRaw ? parseDDMMYYYY(fromRaw) || fromRaw : undefined;
+    const to = toRaw ? parseDDMMYYYY(toRaw) || toRaw : undefined;
+    fetchEvents({ q: q || undefined, from, to }).then(renderEventsList).catch(err => alert(err.message));
   });
   if (isAdmin) {
     document.getElementById('events-add').addEventListener('click', () => document.getElementById('events-form').classList.remove('hidden'));
     document.getElementById('ev-cancel').addEventListener('click', () => document.getElementById('events-form').classList.add('hidden'));
     document.getElementById('ev-submit').addEventListener('click', () => {
       const title = document.getElementById('ev-title').value.trim();
-      const date = document.getElementById('ev-date').value.trim();
-      if (!title || !date) { alert('Название и дата обязательны'); return; }
+      const dateRaw = document.getElementById('ev-date').value.trim();
+      const date = parseDDMMYYYY(dateRaw) || dateRaw;
+      if (!title || !date) { alert('Название и дата обязательны. Дата в формате ДД/ММ/ГГГГ'); return; }
       api('/api/events', {
         method: 'POST',
         body: JSON.stringify({
@@ -690,63 +735,106 @@ function loadEvents() {
   }
 }
 
-function loadFiles() {
-  api('/api/files').then(data => {
-    const files = data.files || [];
-    const used = data.storage_used ?? 0;
-    const limit = data.storage_limit ?? 2 * 1024 * 1024 * 1024;
-    const usedMB = (used / 1024 / 1024).toFixed(2);
-    const limitGB = (limit / 1024 / 1024 / 1024).toFixed(1);
+function loadNotes() {
+  if (state.notesNoteId) {
+    api('/api/notes/' + state.notesNoteId).then(data => {
+      const note = data.note || {};
+      const comments = data.comments || [];
+      document.getElementById('content').innerHTML = `
+        <div class="card">
+          <button type="button" class="btn btn-text btn-small" id="notes-back">← Назад к заметкам</button>
+          <h3>${escapeHtml(note.title || 'Заметка')}</h3>
+          <div class="forum-topic-body">${escapeHtml(note.body || '')}</div>
+          <p class="meta">${formatDate(note.created_at)}</p>
+          <h4 style="margin-top:1rem">Дополнения (${comments.length})</h4>
+          <div id="notes-comments">${comments.map(c => `
+            <div class="list-item"><div>${escapeHtml(c.body || '')}</div><p class="meta">${formatDate(c.created_at)}</p></div>
+          `).join('')}</div>
+          <div class="card" style="margin-top:1rem">
+            <h4>Добавить дополнение</h4>
+            <div class="form-row"><label>Текст</label><textarea id="notes-comment-body" placeholder="Текст дополнения"></textarea></div>
+            <button type="button" class="btn btn-primary" id="notes-comment-submit">Добавить</button>
+          </div>
+        </div>
+      `;
+      document.getElementById('notes-back').addEventListener('click', () => {
+        state.notesNoteId = null; state.notesNote = null; loadNotes();
+      });
+      document.getElementById('notes-comment-submit').addEventListener('click', () => {
+        const body = document.getElementById('notes-comment-body').value.trim();
+        if (!body) { alert('Введите текст'); return; }
+        api('/api/notes/' + state.notesNoteId + '/comments', { method: 'POST', body: JSON.stringify({ body }) }).then(() => {
+          document.getElementById('notes-comment-body').value = ''; loadNotes();
+        }).catch(err => alert(err.message));
+      });
+    }).catch(err => { document.getElementById('content').innerHTML = `<p class="error-msg">${escapeHtml(err.message)}</p>`; });
+    return;
+  }
+  state.notesNote = null;
+  api('/api/notes').then(list => {
+    const notes = Array.isArray(list) ? list : [];
     document.getElementById('content').innerHTML = `
       <div class="card">
-        <h3>Мои файлы</h3>
-        <p class="meta">Использовано: ${usedMB} МБ из ${limitGB} ГБ</p>
+        <h3>Мои заметки</h3>
+        <button class="btn btn-primary btn-small" id="notes-new">Новая заметка</button>
+        <div id="notes-topics" style="margin-top: 1rem"></div>
+      </div>
+      <div id="notes-form" class="card hidden">
+        <h3>Новая заметка</h3>
         <div class="form-row">
-          <input type="file" id="file-upload-input">
-          <button class="btn btn-primary btn-small" id="file-upload-btn">Загрузить</button>
+          <label>Заголовок</label>
+          <input type="text" id="notes-title" placeholder="Заголовок">
         </div>
-        <div id="files-list" style="margin-top: 1rem"></div>
+        <div class="form-row">
+          <label>Текст</label>
+          <textarea id="notes-body" placeholder="Текст"></textarea>
+        </div>
+        <button class="btn btn-primary" id="notes-submit">Создать</button>
+        <button class="btn btn-text" id="notes-cancel">Отмена</button>
       </div>
     `;
-    const listEl = document.getElementById('files-list');
-    listEl.innerHTML = files.length
-      ? files.map(f => `
-        <div class="list-item">
+    const topicsEl = document.getElementById('notes-topics');
+    topicsEl.innerHTML = notes.length
+      ? notes.map(n => `
+        <div class="list-item forum-topic-click" data-note-id="${n.id}" style="cursor:pointer">
           <div>
-            <strong>${escapeHtml(f.filename || f.path)}</strong>
-            <p class="meta">${(f.size_bytes / 1024).toFixed(1)} КБ</p>
+            <strong>${escapeHtml(n.title || '(без заголовка)')}</strong>
+            <p class="meta">${escapeHtml((n.body || '').slice(0, 120))}${(n.body || '').length > 120 ? '...' : ''}</p>
+            <p class="meta">${formatDate(n.created_at)}</p>
           </div>
-          <button class="btn btn-small btn-danger" data-file-id="${f.id}">Удалить</button>
         </div>
       `).join('')
-      : '<p class="empty-state">Нет файлов</p>';
+      : '<p class="empty-state">Нет заметок</p>';
 
-    document.getElementById('file-upload-btn').addEventListener('click', () => {
-      const input = document.getElementById('file-upload-input');
-      if (!input.files || !input.files[0]) { alert('Выберите файл'); return; }
-      const fd = new FormData();
-      fd.append('file', input.files[0]);
-      fetch(API_BASE + '/api/files/upload', {
-        method: 'POST',
-        headers: { 'Authorization': 'Bearer ' + state.token },
-        body: fd
-      }).then(r => {
-        if (r.status === 401) { logout(); window.location.reload(); return; }
-        return r.json();
-      }).then(data => {
-        if (data && data.id) { loadFiles(); input.value = ''; }
-        else alert(data?.error || 'Ошибка загрузки');
-      }).catch(() => alert('Ошибка загрузки'));
-    });
-    listEl.querySelectorAll('[data-file-id]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        if (!confirm('Удалить файл?')) return;
-        api('/api/files/' + btn.dataset.fileId, { method: 'DELETE' }).then(() => loadFiles()).catch(err => alert(err.message));
+    topicsEl.querySelectorAll('.forum-topic-click').forEach((el, i) => {
+      el.addEventListener('click', () => {
+        const n = notes[i];
+        state.notesNoteId = n.id;
+        state.notesNote = n;
+        loadNotes();
       });
     });
-  }).catch(err => {
-    document.getElementById('content').innerHTML = `<p class="error-msg">${escapeHtml(err.message)}</p>`;
-  });
+    document.getElementById('notes-new').addEventListener('click', () => {
+      document.getElementById('notes-form').classList.remove('hidden');
+    });
+    document.getElementById('notes-cancel').addEventListener('click', () => {
+      document.getElementById('notes-form').classList.add('hidden');
+    });
+    document.getElementById('notes-submit').addEventListener('click', () => {
+      const title = document.getElementById('notes-title').value.trim();
+      const body = document.getElementById('notes-body').value.trim();
+      if (!body) { alert('Введите текст'); return; }
+      api('/api/notes', {
+        method: 'POST',
+        body: JSON.stringify({ title: title || null, body })
+      }).then(() => {
+        document.getElementById('notes-form').classList.add('hidden');
+        document.getElementById('notes-title').value = '';
+        document.getElementById('notes-body').value = '';
+        loadNotes();
+      }).catch(err => alert(err.message));
+    });
+  }).catch(err => { document.getElementById('content').innerHTML = `<p class="error-msg">${escapeHtml(err.message)}</p>`; });
 }
 
 function loadChat() {
@@ -761,35 +849,64 @@ function loadChat() {
     </div>
   `;
   const messagesEl = document.getElementById('chat-messages');
-  state.chatMessages = [];
+  const isAdmin = ['admin', 'director'].includes(state.user?.role || '');
+  const myId = state.user?.user_id || state.user?.userId;
 
   function renderChat() {
-    messagesEl.innerHTML = state.chatMessages.map(m => {
+    if (!messagesEl) return;
+    messagesEl.innerHTML = (state.chatMessages || []).map(m => {
       let body = m.body || m.message || '';
-      try { if (typeof m === 'string') m = JSON.parse(m); body = m.body || m.message || m; } catch (_) {}
+      let author = m.author_name || '';
+      let id = m.id;
+      let userId = m.user_id;
+      try { if (typeof m === 'string') m = JSON.parse(m); body = m.body || m.message || m; author = m.author_name || author; id = m.id; userId = m.user_id; } catch (_) {}
       if (typeof body !== 'string') body = String(body);
-      return `<div class="chat-msg"><div>${escapeHtml(body)}</div></div>`;
+      const canDelete = id && (isAdmin || userId === myId);
+      return `<div class="chat-msg" data-msg-id="${id || ''}">
+        <div>${author ? `<span class="chat-author" data-user-id="${userId || ''}" style="cursor:pointer;font-weight:600">${escapeHtml(author)}:</span> ` : ''}${escapeHtml(body)}</div>
+        ${canDelete ? `<button class="btn btn-text btn-small chat-msg-del" data-id="${id}">Удалить</button>` : ''}
+      </div>`;
     }).join('');
     messagesEl.scrollTop = messagesEl.scrollHeight;
+    messagesEl.querySelectorAll('.chat-author[data-user-id]').forEach(el => {
+      const uid = el.dataset.userId;
+      if (uid) el.addEventListener('click', () => showUserProfile(uid));
+    });
+    messagesEl.querySelectorAll('.chat-msg-del').forEach(btn => {
+      btn.addEventListener('click', () => {
+        api('/api/chat/messages/' + btn.dataset.id, { method: 'DELETE' }).then(() => {
+          state.chatMessages = state.chatMessages.filter(m => m.id != btn.dataset.id);
+          renderChat();
+        }).catch(err => alert(err.message));
+      });
+    });
   }
 
-  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const wsUrl = protocol + '//' + window.location.host + API_BASE + '/api/chat/ws?token=' + encodeURIComponent(state.token || '');
-  const ws = new WebSocket(wsUrl);
-  ws.onopen = () => {
-    ws.send(JSON.stringify({ type: 'hello', body: state.user?.full_name + ' подключился' }));
-  };
-  ws.onmessage = (e) => {
-    try {
-      const m = JSON.parse(e.data);
-      state.chatMessages.push(m);
-    } catch (_) {
-      state.chatMessages.push({ body: e.data });
+  api('/api/chat/messages').then(list => {
+    state.chatMessages = Array.isArray(list) ? list : [];
+  }).catch(() => { state.chatMessages = []; }).finally(() => {
+    if (!state.chatWs || state.chatWs.readyState === WebSocket.CLOSED || state.chatWs.readyState === WebSocket.CLOSING) {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = protocol + '//' + window.location.host + API_BASE + '/api/chat/ws?token=' + encodeURIComponent(state.token || '');
+      const ws = new WebSocket(wsUrl);
+      ws.onopen = () => {
+        ws.send(JSON.stringify({ type: 'hello', body: state.user?.full_name + ' подключился' }));
+      };
+      ws.onmessage = (e) => {
+        try {
+          const m = JSON.parse(e.data);
+          if (m.id && !state.chatMessages.find(x => x.id === m.id)) state.chatMessages.push(m);
+          else if (!m.id) state.chatMessages.push(m);
+        } catch (_) {
+          state.chatMessages.push({ body: e.data });
+        }
+        renderChat();
+      };
+      ws.onerror = () => { state.chatMessages.push({ body: 'Ошибка подключения' }); renderChat(); };
+      state.chatWs = ws;
     }
     renderChat();
-  };
-  ws.onerror = () => { state.chatMessages.push({ body: 'Ошибка подключения' }); renderChat(); };
-  state.chatWs = ws;
+  });
 
   document.getElementById('chat-send').addEventListener('click', () => {
     const input = document.getElementById('chat-input');
@@ -797,8 +914,6 @@ function loadChat() {
     if (!text || !state.chatWs || state.chatWs.readyState !== WebSocket.OPEN) return;
     const msg = { type: 'message', body: text };
     state.chatWs.send(JSON.stringify(msg));
-    state.chatMessages.push(msg);
-    renderChat();
     input.value = '';
   });
   document.getElementById('chat-input').addEventListener('keydown', (e) => {
@@ -808,54 +923,194 @@ function loadChat() {
 }
 
 function loadProfile() {
-  const u = state.user;
-  document.getElementById('content').innerHTML = `
-    <div class="card">
-      <h3>Профиль</h3>
-      <p><strong>Имя:</strong> ${escapeHtml(u?.full_name || '')}</p>
-      <p><strong>Email:</strong> ${escapeHtml(u?.email || '')}</p>
-      <p><strong>Роль:</strong> ${escapeHtml(u?.role || '')}</p>
-    </div>
-    <div class="card">
-      <h3>Сменить пароль</h3>
-      <div class="form-row"><label>Новый пароль</label><input type="password" id="profile-password" placeholder="Новый пароль"></div>
-      <div class="form-row"><label>Телефон (опционально)</label><input type="text" id="profile-phone" placeholder="+7 ..."></div>
-      <button type="button" class="btn btn-primary" id="profile-save">Сохранить</button>
-    </div>
-  `;
-  document.getElementById('profile-save').addEventListener('click', () => {
-    const password = document.getElementById('profile-password').value;
-    const phone = document.getElementById('profile-phone').value.trim();
-    const body = {};
-    if (password) body.password = password;
-    if (phone) body.phone = phone;
-    if (!password && !phone) { alert('Введите новый пароль и/или телефон'); return; }
-    api('/api/profile', { method: 'PUT', body: JSON.stringify(body) }).then(() => {
-      alert('Сохранено');
-      document.getElementById('profile-password').value = '';
-    }).catch(err => alert(err.message));
+  api('/api/profile').then(p => {
+    if (p) {
+      state.user = { ...state.user, full_name: p.full_name, email: p.email, role: p.role, phone: p.phone, avatar_url: p.avatar_url };
+      saveStored();
+    }
+    const u = state.user;
+    document.getElementById('content').innerHTML = `
+      <div class="card">
+        <h3>Профиль</h3>
+        <p><strong>Имя:</strong> ${escapeHtml(u?.full_name || '')}</p>
+        <p><strong>Email:</strong> ${escapeHtml(u?.email || '')}</p>
+        <p><strong>Телефон:</strong> ${escapeHtml(u?.phone || '—')}</p>
+        <p><strong>Роль:</strong> ${escapeHtml(u?.role || '')}</p>
+      </div>
+      <div class="card">
+        <h3>Сменить пароль и телефон</h3>
+        <div class="form-row"><label>Новый пароль</label><input type="password" id="profile-password" placeholder="Новый пароль"></div>
+        <div class="form-row"><label>Телефон</label><input type="text" id="profile-phone" placeholder="+7 ..." value="${escapeHtml(u?.phone || '')}"></div>
+        <button type="button" class="btn btn-primary" id="profile-save">Сохранить</button>
+      </div>
+    `;
+    document.getElementById('profile-save').addEventListener('click', () => {
+      const password = document.getElementById('profile-password').value;
+      const phone = document.getElementById('profile-phone').value.trim();
+      const body = {};
+      if (password) body.password = password;
+      body.phone = phone;
+      if (!password && !phone) { alert('Введите новый пароль и/или телефон'); return; }
+      api('/api/profile', { method: 'PUT', body: JSON.stringify(body) }).then(() => {
+        alert('Сохранено');
+        document.getElementById('profile-password').value = '';
+        state.user.phone = phone;
+        saveStored();
+        loadProfile();
+      }).catch(err => alert(err.message));
+    });
+  }).catch(err => {
+    const u = state.user;
+    document.getElementById('content').innerHTML = `
+      <div class="card">
+        <h3>Профиль</h3>
+        <p><strong>Имя:</strong> ${escapeHtml(u?.full_name || '')}</p>
+        <p><strong>Email:</strong> ${escapeHtml(u?.email || '')}</p>
+        <p><strong>Телефон:</strong> ${escapeHtml(u?.phone || '—')}</p>
+        <p><strong>Роль:</strong> ${escapeHtml(u?.role || '')}</p>
+      </div>
+      <div class="card">
+        <h3>Сменить пароль и телефон</h3>
+        <div class="form-row"><label>Новый пароль</label><input type="password" id="profile-password" placeholder="Новый пароль"></div>
+        <div class="form-row"><label>Телефон</label><input type="text" id="profile-phone" placeholder="+7 ..." value="${escapeHtml(u?.phone || '')}"></div>
+        <button type="button" class="btn btn-primary" id="profile-save">Сохранить</button>
+      </div>
+    `;
+    document.getElementById('profile-save').addEventListener('click', () => {
+      const password = document.getElementById('profile-password').value;
+      const phone = document.getElementById('profile-phone').value.trim();
+      const body = {};
+      if (password) body.password = password;
+      body.phone = phone;
+      if (!password && !phone) { alert('Введите новый пароль и/или телефон'); return; }
+      api('/api/profile', { method: 'PUT', body: JSON.stringify(body) }).then(() => {
+        alert('Сохранено');
+        document.getElementById('profile-password').value = '';
+        state.user.phone = phone;
+        saveStored();
+        loadProfile();
+      }).catch(err => alert(err.message));
+    });
   });
 }
 
 function loadDirectorProfile() {
-  api('/api/director').then(d => {
+  if (state.directorPostId) {
+    api('/api/director/posts/' + state.directorPostId).then(data => {
+      const post = data.post || {};
+      const comments = data.comments || [];
+      document.getElementById('content').innerHTML = `
+        <div class="card">
+          <button type="button" class="btn btn-text btn-small" id="director-back">← Назад к постам</button>
+          <h3>${escapeHtml(post.title || 'Пост')}</h3>
+          <div class="forum-topic-body">${escapeHtml(post.body || '')}</div>
+          <p class="meta">${formatDate(post.created_at)}</p>
+          <h4 style="margin-top:1rem">Комментарии (${comments.length})</h4>
+          <div id="director-comments">${comments.map(c => `
+            <div class="list-item"><div>${escapeHtml(c.body || '')}</div><p class="meta">${escapeHtml(c.author_name || '')} · ${formatDate(c.created_at)}</p></div>
+          `).join('')}</div>
+          <div class="card" style="margin-top:1rem">
+            <h4>Комментировать</h4>
+            <div class="form-row"><label>Текст</label><textarea id="director-comment-body" placeholder="Текст комментария"></textarea></div>
+            <button type="button" class="btn btn-primary" id="director-comment-submit">Отправить</button>
+          </div>
+        </div>
+      `;
+      document.getElementById('director-back').addEventListener('click', () => {
+        state.directorPostId = null; state.directorPost = null; loadDirectorProfile();
+      });
+      document.getElementById('director-comment-submit').addEventListener('click', () => {
+        const body = document.getElementById('director-comment-body').value.trim();
+        if (!body) { alert('Введите текст'); return; }
+        api('/api/director/posts/' + state.directorPostId + '/comments', { method: 'POST', body: JSON.stringify({ body }) }).then(() => {
+          document.getElementById('director-comment-body').value = ''; loadDirectorProfile();
+        }).catch(err => alert(err.message));
+      });
+    }).catch(err => { document.getElementById('content').innerHTML = `<p class="error-msg">${escapeHtml(err.message)}</p>`; });
+    return;
+  }
+  state.directorPost = null;
+  Promise.all([
+    fetch(API_BASE + '/api/director').then(async r => { if (!r.ok) return {}; try { return await r.json(); } catch (_) { return {}; } }),
+    fetch(API_BASE + '/api/director/posts').then(async r => { if (!r.ok) return []; try { return await r.json(); } catch (_) { return []; } })
+  ]).then(([d, postsList]) => {
+    const posts = Array.isArray(postsList) ? postsList : [];
+    const isDirector = state.user?.role === 'director';
     document.getElementById('content').innerHTML = `
       <div class="card director-card">
         <h3>Профиль директора</h3>
         <div class="director-header">
-          ${d.avatar_url ? `<img src="${escapeHtml(d.avatar_url)}" alt="" class="director-avatar">` : '<div class="director-avatar-placeholder">👔</div>'}
-          <div>
-            <strong class="director-name">${escapeHtml(d.full_name || '')}</strong>
-            ${d.phone ? `<p class="meta">Телефон: ${escapeHtml(d.phone)}</p>` : ''}
-            ${d.email ? `<p class="meta">${escapeHtml(d.email)}</p>` : ''}
-            <a href="tel:${escapeHtml(d.phone || '')}" class="btn btn-primary btn-small" style="margin-top:0.5rem">Написать директору</a>
-          </div>
+          <div><strong class="director-name">${escapeHtml(d.full_name || '')}</strong>
+          ${d.phone ? `<p class="meta">Телефон: ${escapeHtml(d.phone)}</p>` : ''}
+          ${d.email ? `<p class="meta">${escapeHtml(d.email)}</p>` : ''}
+          <a href="tel:${escapeHtml(d.phone || '')}" class="btn btn-primary btn-small" style="margin-top:0.5rem">Написать директору</a></div>
         </div>
       </div>
+      <div class="card">
+        <h3>Посты директора</h3>
+        ${isDirector ? '<button class="btn btn-primary btn-small" id="director-new-post">Новый пост</button>' : ''}
+        <div id="director-posts-topics" style="margin-top: 1rem"></div>
+      </div>
+      ${isDirector ? `
+      <div id="director-form" class="card hidden">
+        <h3>Новый пост</h3>
+        <div class="form-row">
+          <label>Заголовок</label>
+          <input type="text" id="director-post-title" placeholder="Заголовок">
+        </div>
+        <div class="form-row">
+          <label>Текст</label>
+          <textarea id="director-post-body" placeholder="Текст"></textarea>
+        </div>
+        <button class="btn btn-primary" id="director-post-submit">Опубликовать</button>
+        <button class="btn btn-text" id="director-post-cancel">Отмена</button>
+      </div>
+      ` : ''}
     `;
-  }).catch(err => {
-    document.getElementById('content').innerHTML = `<p class="error-msg">${escapeHtml(err.message)}</p>`;
-  });
+    const topicsEl = document.getElementById('director-posts-topics');
+    topicsEl.innerHTML = posts.length
+      ? posts.map(p => `
+        <div class="list-item forum-topic-click" data-post-id="${p.id}" style="cursor:pointer">
+          <div>
+            <strong>${escapeHtml(p.title || '(без заголовка)')}</strong>
+            <p class="meta">${escapeHtml((p.body || '').slice(0, 120))}${(p.body || '').length > 120 ? '...' : ''}</p>
+            <p class="meta">${formatDate(p.created_at)}</p>
+          </div>
+        </div>
+      `).join('')
+      : '<p class="empty-state">Нет постов</p>';
+
+    topicsEl.querySelectorAll('.forum-topic-click').forEach((el, i) => {
+      el.addEventListener('click', () => {
+        const p = posts[i];
+        state.directorPostId = p.id;
+        state.directorPost = p;
+        loadDirectorProfile();
+      });
+    });
+    if (isDirector) {
+      document.getElementById('director-new-post').addEventListener('click', () => {
+        document.getElementById('director-form').classList.remove('hidden');
+      });
+      document.getElementById('director-post-cancel').addEventListener('click', () => {
+        document.getElementById('director-form').classList.add('hidden');
+      });
+      document.getElementById('director-post-submit').addEventListener('click', () => {
+        const title = document.getElementById('director-post-title').value.trim();
+        const body = document.getElementById('director-post-body').value.trim();
+        if (!body) { alert('Введите текст'); return; }
+        api('/api/director/posts', {
+          method: 'POST',
+          body: JSON.stringify({ title: title || null, body })
+        }).then(() => {
+          document.getElementById('director-form').classList.add('hidden');
+          document.getElementById('director-post-title').value = '';
+          document.getElementById('director-post-body').value = '';
+          loadDirectorProfile();
+        }).catch(err => alert(err.message));
+      });
+    }
+  }).catch(err => { document.getElementById('content').innerHTML = `<p class="error-msg">${escapeHtml(err.message)}</p>`; });
 }
 
 function loadRegulations() {
@@ -869,15 +1124,172 @@ function loadRegulations() {
   `;
 }
 
+function loadNotifications() {
+  const isAdmin = ['admin', 'director'].includes(state.user?.role || '');
+  api('/api/notifications?limit=50').then(list => {
+    const items = Array.isArray(list) ? list : [];
+    document.getElementById('content').innerHTML = `
+      <div class="card">
+        <h3>Уведомления</h3>
+        ${isAdmin ? `
+          <div class="form-row">
+            <input type="text" id="notif-title" placeholder="Заголовок">
+            <textarea id="notif-body" placeholder="Текст уведомления" rows="2"></textarea>
+            <button class="btn btn-primary btn-small" id="notif-send">Отправить всем</button>
+          </div>
+        ` : ''}
+        <div id="notif-list" style="margin-top:1rem">
+          ${items.length ? items.map(n => `
+            <div class="list-item">
+              <div>
+                <strong>${escapeHtml(n.title)}</strong>
+                ${n.body ? `<p class="meta">${escapeHtml(n.body)}</p>` : ''}
+                <p class="meta">${formatDate(n.created_at)}</p>
+              </div>
+            </div>
+          `).join('') : '<p class="empty-state">Нет уведомлений</p>'}
+        </div>
+      </div>
+    `;
+    if (isAdmin) {
+      document.getElementById('notif-send').addEventListener('click', () => {
+        const title = document.getElementById('notif-title').value.trim();
+        const body = document.getElementById('notif-body').value.trim();
+        if (!title) { alert('Введите заголовок'); return; }
+        api('/api/notifications', { method: 'POST', body: JSON.stringify({ title, body }) }).then(() => {
+          document.getElementById('notif-title').value = '';
+          document.getElementById('notif-body').value = '';
+          loadNotifications();
+        }).catch(err => alert(err.message));
+      });
+    }
+  }).catch(err => {
+    document.getElementById('content').innerHTML = `<p class="error-msg">${escapeHtml(err.message)}</p>`;
+  });
+}
+
+function loadAllUsers() {
+  api('/api/users').then(list => {
+    const items = Array.isArray(list) ? list : [];
+    document.getElementById('content').innerHTML = `
+      <div class="card">
+        <h3>Все пользователи</h3>
+        <p class="meta">Имя · Роль</p>
+        <div id="users-list">
+          ${items.length ? items.map(u => `
+            <div class="list-item user-item" data-user-id="${u.id}">
+              <div>
+                <strong>${escapeHtml(u.full_name)}</strong>
+                <span class="meta"> · ${escapeHtml(u.role)}</span>
+                ${u.email ? `<p class="meta">${escapeHtml(u.email)}</p>` : ''}
+              </div>
+              <div style="display:flex;gap:0.5rem">
+                <button class="btn btn-small btn-secondary btn-edit-user" data-user-id="${u.id}">Редактировать</button>
+                <button class="btn btn-small btn-danger btn-delete-user" data-user-id="${u.id}">Удалить</button>
+              </div>
+            </div>
+          `).join('') : '<p class="empty-state">Нет пользователей</p>'}
+        </div>
+      </div>
+      <div id="user-edit-modal" class="modal hidden">
+        <div class="modal-content card">
+          <h3>Редактировать пользователя</h3>
+          <input type="hidden" id="edit-user-id">
+          <div class="form-row"><label>Имя</label><input type="text" id="edit-user-name"></div>
+          <div class="form-row"><label>Email</label><input type="email" id="edit-user-email"></div>
+          <div class="form-row"><label>Телефон</label><input type="text" id="edit-user-phone"></div>
+          <div class="form-row"><label>Роль</label><select id="edit-user-role"><option value="student">student</option><option value="teacher">teacher</option><option value="director">director</option><option value="admin">admin</option></select></div>
+          <button class="btn btn-primary" id="edit-user-save">Сохранить</button>
+          <button class="btn btn-text" id="edit-user-cancel">Отмена</button>
+        </div>
+      </div>
+    `;
+    const users = items;
+    document.querySelectorAll('.btn-edit-user').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.userId;
+        const u = users.find(x => String(x.id) === id);
+        if (!u) return;
+        document.getElementById('edit-user-id').value = u.id;
+        document.getElementById('edit-user-name').value = u.full_name || '';
+        document.getElementById('edit-user-email').value = u.email || '';
+        document.getElementById('edit-user-phone').value = u.phone || '';
+        document.getElementById('edit-user-role').value = u.role || 'student';
+        document.getElementById('user-edit-modal').classList.remove('hidden');
+      });
+    });
+    document.querySelectorAll('.btn-delete-user').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (!confirm('Деактивировать пользователя?')) return;
+        api('/api/users/' + btn.dataset.userId, { method: 'DELETE' }).then(() => loadAllUsers()).catch(err => alert(err.message));
+      });
+    });
+    document.getElementById('edit-user-save').addEventListener('click', () => {
+      const id = document.getElementById('edit-user-id').value;
+      api('/api/users/' + id, {
+        method: 'PUT',
+        body: JSON.stringify({
+          full_name: document.getElementById('edit-user-name').value.trim(),
+          email: document.getElementById('edit-user-email').value.trim(),
+          phone: document.getElementById('edit-user-phone').value.trim(),
+          role: document.getElementById('edit-user-role').value
+        })
+      }).then(() => {
+        document.getElementById('user-edit-modal').classList.add('hidden');
+        loadAllUsers();
+      }).catch(err => alert(err.message));
+    });
+    document.getElementById('edit-user-cancel').addEventListener('click', () => {
+      document.getElementById('user-edit-modal').classList.add('hidden');
+    });
+  }).catch(err => {
+    document.getElementById('content').innerHTML = `<p class="error-msg">${escapeHtml(err.message)}</p>`;
+  });
+}
+
 function loadMap() {
-  document.getElementById('content').innerHTML = `
-    <div class="card">
-      <h3>Карта здания</h3>
-      <p>Схема этажей и навигация по корпусу. При необходимости обратитесь в приёмную комиссию.</p>
-      <p class="meta">Адрес: ул. Жандосова, 55, г. Алматы, Казахстан, 050035.</p>
-      <div class="map-placeholder"><span>Карта и план эвакуации</span><br><small>Размещаются администрацией</small></div>
-    </div>
-  `;
+  const isAdmin = ['admin', 'director'].includes(state.user?.role || '');
+  fetch(API_BASE + '/api/building-map').then(r => r.ok ? r.json() : {}).then(data => {
+    const content = data?.content || 'Карта и план эвакуации. Размещаются администрацией.';
+    const imageUrl = data?.image_url || '';
+    document.getElementById('content').innerHTML = `
+      <div class="card">
+        <h3>Карта здания</h3>
+        <p class="meta">Адрес: ул. Жандосова, 55, г. Алматы, Казахстан, 050035.</p>
+        <div class="map-placeholder">
+          ${imageUrl ? `<img src="${API_BASE}${imageUrl}" alt="Карта" style="max-width:100%;border-radius:2px">` : ''}
+          <p>${escapeHtml(content)}</p>
+        </div>
+        ${isAdmin ? `
+          <div class="card" style="margin-top:1rem">
+            <h4>Редактировать</h4>
+            <textarea id="map-content" rows="3" placeholder="Описание">${escapeHtml(content)}</textarea>
+            <input type="text" id="map-image-url" placeholder="URL изображения карты" value="${escapeHtml(imageUrl)}">
+            <button class="btn btn-primary btn-small" id="map-save">Сохранить</button>
+          </div>
+        ` : ''}
+      </div>
+    `;
+    if (isAdmin) {
+      document.getElementById('map-save').addEventListener('click', () => {
+        api('/api/building-map', {
+          method: 'PUT',
+          body: JSON.stringify({
+            content: document.getElementById('map-content').value.trim(),
+            image_url: document.getElementById('map-image-url').value.trim()
+          })
+        }).then(() => { alert('Сохранено'); loadMap(); }).catch(err => alert(err.message));
+      });
+    }
+  }).catch(() => {
+    document.getElementById('content').innerHTML = `
+      <div class="card">
+        <h3>Карта здания</h3>
+        <p class="meta">Адрес: ул. Жандосова, 55, г. Алматы, Казахстан, 050035.</p>
+        <div class="map-placeholder"><span>Карта и план эвакуации</span></div>
+      </div>
+    `;
+  });
 }
 
 // ——— Вход / выход ———
@@ -903,6 +1315,28 @@ function showApp() {
 }
 
 // ——— Инициализация ———
+function showUserProfile(userId) {
+  if (!userId) return;
+  api('/api/users/' + userId).then(u => {
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.innerHTML = `
+      <div class="modal-content card">
+        <h3>Профиль</h3>
+        ${u.avatar_url ? `<img src="${API_BASE}${u.avatar_url}" alt="" style="width:64px;height:64px;border-radius:2px;object-fit:cover;margin-bottom:0.5rem">` : ''}
+        <p><strong>${escapeHtml(u.full_name || '')}</strong></p>
+        <p class="meta">${escapeHtml(u.email || '')}</p>
+        <p class="meta">${escapeHtml(u.phone || '')}</p>
+        <p class="meta">${escapeHtml(u.role || '')}</p>
+        <button class="btn btn-text" id="user-profile-close">Закрыть</button>
+      </div>
+    `;
+    modal.querySelector('#user-profile-close').onclick = () => modal.remove();
+    modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+    document.body.appendChild(modal);
+  }).catch(() => {});
+}
+
 function escapeHtml(s) {
   if (s == null) return '';
   const div = document.createElement('div');
@@ -913,7 +1347,30 @@ function escapeHtml(s) {
 function formatDate(s) {
   if (!s) return '';
   const d = new Date(s);
-  return isNaN(d.getTime()) ? s : d.toLocaleDateString('ru-RU');
+  if (isNaN(d.getTime())) return s;
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
+  return day + '/' + month + '/' + year;
+}
+
+function toISOForInput(s) {
+  if (!s) return '';
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? '' : d.toISOString().slice(0, 10);
+}
+
+function parseDDMMYYYY(s) {
+  if (!s || typeof s !== 'string') return '';
+  const parts = s.trim().split(/[/.-]/);
+  if (parts.length !== 3) return '';
+  const day = parseInt(parts[0], 10);
+  const month = parseInt(parts[1], 10) - 1;
+  const year = parseInt(parts[2], 10);
+  if (isNaN(day) || isNaN(month) || isNaN(year)) return '';
+  const d = new Date(year, month, day);
+  if (isNaN(d.getTime())) return '';
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 }
 
 function formatTime(d) {

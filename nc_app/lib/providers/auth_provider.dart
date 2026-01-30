@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../config/api_config.dart';
 import '../services/api_service.dart';
 
 class AuthProvider with ChangeNotifier {
@@ -35,7 +34,7 @@ class AuthProvider with ChangeNotifier {
   }
 
   Future<void> login(String email, String password) async {
-    final res = await ApiService.post('/auth/login', {'email': email, 'password': password}) as Map<String, dynamic>;
+    final res = await ApiService.post('/auth/login', {'email': email, 'password': password});
     _token = res['token'] as String?;
     _userId = (res['user_id'] as num?)?.toInt();
     _role = res['role'] as String?;

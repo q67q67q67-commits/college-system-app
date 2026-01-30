@@ -7,8 +7,8 @@ import (
 
 	"golang.org/x/crypto/bcrypt"
 
-	"github.com/narxoz-college/nc/internal/auth"
-	"github.com/narxoz-college/nc/internal/repository"
+	"github.com/q67q67q67-commits/college-system-app/internal/auth"
+	"github.com/q67q67q67-commits/college-system-app/internal/repository"
 )
 
 // LoginRequest — тело POST /auth/login.
@@ -61,7 +61,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	expire := 24 * time.Hour
-	token, err := auth.CreateToken(h.JWTSecret, u.ID, u.Role, u.Email, expire)
+	token, err := auth.CreateToken(h.JWTSecret, u.ID, u.Role, u.Email, u.FullName, expire)
 	if err != nil {
 		http.Error(w, `{"error":"internal error"}`, http.StatusInternalServerError)
 		return

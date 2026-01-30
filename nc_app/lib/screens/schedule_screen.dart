@@ -22,7 +22,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     try {
       final res = await ApiService.get('/api/schedule');
       setState(() {
-        _list = res is List ? res : [];
+        _list = res is List ? List<dynamic>.from(res as List) : [];
         _error = null;
       });
     } catch (e) {

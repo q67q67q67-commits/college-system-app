@@ -13,8 +13,8 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _email = TextEditingController(text: 'student1@nc.kz');
-  final _password = TextEditingController(text: 'password123');
+  final _email = TextEditingController();
+  final _password = TextEditingController();
   String? _error;
   bool _loading = false;
 
@@ -25,17 +25,24 @@ class _LoginScreenState extends State<LoginScreen> {
     });
     try {
       await context.read<AuthProvider>().login(_email.text.trim(), _password.text);
-      if (mounted) Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const MainShell()));
+      if (mounted) {
+        setState(() => _loading = false);
+        Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const MainShell()));
+      }
     } on ApiException catch (e) {
-      if (mounted) setState(() {
+      if (mounted) {
+        setState(() {
         _error = e.message;
         _loading = false;
       });
+      }
     } catch (e) {
-      if (mounted) setState(() {
+      if (mounted) {
+        setState(() {
         _error = e.toString();
         _loading = false;
       });
+      }
     }
   }
 
@@ -79,14 +86,14 @@ class _LoginScreenState extends State<LoginScreen> {
                       ],
                       TextField(
                         controller: _email,
-                        decoration: const InputDecoration(labelText: 'Email', border: OutlineInputBorder()),
+                        decoration: const InputDecoration(labelText: 'Email', hintText: 'email@email.com', border: OutlineInputBorder()),
                         keyboardType: TextInputType.emailAddress,
                         textInputAction: TextInputAction.next,
                       ),
                       const SizedBox(height: 12),
                       TextField(
                         controller: _password,
-                        decoration: const InputDecoration(labelText: 'Пароль', border: OutlineInputBorder()),
+                        decoration: const InputDecoration(labelText: 'Пароль', hintText: 'password', border: OutlineInputBorder()),
                         obscureText: true,
                         textInputAction: TextInputAction.done,
                         onSubmitted: (_) => _submit(),
@@ -96,8 +103,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         onPressed: _loading ? null : _submit,
                         child: _loading ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Войти'),
                       ),
-                      const SizedBox(height: 16),
-                      const Text('Тест: student1@nc.kz, director@nc.kz — пароль password123', style: TextStyle(fontSize: 12, color: Colors.grey)),
                     ],
                   ),
                 ),

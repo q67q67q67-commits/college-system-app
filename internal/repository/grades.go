@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"time"
 
-	"github.com/narxoz-college/nc/internal/db"
+	"github.com/q67q67q67-commits/college-system-app/internal/db"
 )
 
 // GradeRow — одна оценка.

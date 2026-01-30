@@ -10,7 +10,7 @@ class TeacherHomeworkScreen extends StatefulWidget {
 
 class _TeacherHomeworkScreenState extends State<TeacherHomeworkScreen> {
   List<dynamic> _schedule = [];
-  Map<int, List<dynamic>> _attachments = {};
+  final Map<int, List<dynamic>> _attachments = {};
   String? _error;
 
   @override
@@ -23,7 +23,7 @@ class _TeacherHomeworkScreenState extends State<TeacherHomeworkScreen> {
     try {
       final res = await ApiService.get('/api/schedule');
       setState(() {
-        _schedule = res is List ? res : [];
+        _schedule = res is List ? List<dynamic>.from(res as List) : [];
         _error = null;
       });
       for (final s in _schedule) {
@@ -40,7 +40,7 @@ class _TeacherHomeworkScreenState extends State<TeacherHomeworkScreen> {
   Future<void> _loadAttachments(int scheduleId) async {
     try {
       final res = await ApiService.get('/api/schedule/$scheduleId/attachments');
-      setState(() => _attachments[scheduleId] = res is List ? res : []);
+      setState(() => _attachments[scheduleId] = res is List ? List<dynamic>.from(res as List) : []);
     } catch (_) {
       setState(() => _attachments[scheduleId] = []);
     }
@@ -110,10 +110,11 @@ class _TeacherHomeworkScreenState extends State<TeacherHomeworkScreen> {
           FilledButton(
             onPressed: () async {
               if (title.text.trim().isEmpty) return;
+              final ctx = context;
               try {
                 await ApiService.post('/api/schedule/$scheduleId/attachments', {'title': title.text.trim(), 'body': body.text.trim(), 'attachment_type': 'homework'});
-                if (context.mounted) {
-                  Navigator.pop(context);
+                if (ctx.mounted) {
+                  Navigator.pop(ctx);
                   _loadAttachments(scheduleId);
                 }
               } catch (_) {}

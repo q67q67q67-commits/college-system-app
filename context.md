@@ -25,6 +25,8 @@ https://github.com/q67q67q67-commits/college-system-app
 Клонирование: `git clone https://github.com/q67q67q67-commits/college-system-app.git`  
 Рабочая ветка бэкенда: **Backend**. Код бэкенда пушится в эту ветку; слияние в main — через Pull Request.
 
+**Go-модуль:** в `go.mod` и во всех импортах используется путь **`github.com/q67q67q67-commits/college-system-app`** (должен совпадать с URL репозитория; раньше был `github.com/narxoz-college/nc` — заменён во избежание ошибок `go get`).
+
 ---
 
 ## 2. Разделение ответственности: только Участник Б (Backend)
@@ -250,7 +252,7 @@ NC/
 
 1. **Прочитать файл ознакомления и проверки:** **`docs/ONBOARDING_AND_VERIFICATION.md`** — что за проект, что есть в репозитории, как запустить и проверить, тестовые аккаунты, чек-лист проверки на баги.
 2. **Прочитать этот файл (`context.md`)** — разделы 1–3 (о проекте, роли), раздел 6 (структура репозитория), раздел 7 (БД кратко).
-3. **Бэкенд:** раздел 4, `api/ENDPOINTS.md`, `migrations/`. Запуск: `docker compose up -d`, `go run ./cmd/api`. **Веб-прототип:** http://localhost:8080/app/ . **Flutter (мобильная + веб):** `cd nc_app`, `flutter pub get`, `flutter run -d chrome` (или `-d android`). См. `nc_app/README.md`.
+3. **Бэкенд:** раздел 4, `api/ENDPOINTS.md`, `migrations/`. Запуск: `docker compose up -d`, `go run ./cmd/api`. **Веб-прототип:** http://localhost:8080/app/ . **Flutter (мобильная + веб):** `cd nc_app`, `flutter pub get`, `flutter run -d chrome` (или `-d android`). См. `nc_app/README.md`. **Настройка Android-эмулятора:** раздел «Как добавить и запустить Android-эмулятор» в **`docs/КАК_ЗАПУСТИТЬ_И_ПРОВЕРИТЬ.md`**.
 3. **Фронтенд-разработчик:** раздел 5 (чек-лист Ф), **`docs/FRONTEND_TUTORIAL.md`** (пошаговый туториал по задачам Фазы 2), `api/ENDPOINTS.md` (все эндпоинты и примеры JSON). Базовый URL API: `http://localhost:8080` (или переменная окружения на проде).
 4. **Тестовые аккаунты (после сидинга):**  
    - director@nc.kz, admin@nc.kz — пароль `password123`  
@@ -276,4 +278,10 @@ NC/
 
 ---
 
-*Последнее обновление контекста: добавлено **Flutter-приложение** (`nc_app/`) — мобильная и веб-версия по требованиям из Заметки и context: логин, навигация по ролям (NavigationRail на широком экране, BottomNavigationBar на узком), экраны: главная (события), расписание, оценки, группы, библиотека (поиск, бронь), форум (темы и ответы), события (список, удаление для admin/director), файлы, профиль директора, регламент, карта, профиль (смена пароля/телефона). Обработка 401 (onUnauthorized → выход и переход на логин). Палитра НАРХОЗ (#a82523, #d50032). Создан файл **`docs/ONBOARDING_AND_VERIFICATION.md`** — ознакомление с проектом, способ запуска и проверки, тестовые аккаунты, чек-лист проверки на баги и недостатки, известные ограничения. В `context.md` обновлены разделы 1 (стек), 6 (структура: nc_app, docs/ONBOARDING_AND_VERIFICATION.md), 10 (онбординг: сначала читать ONBOARDING_AND_VERIFICATION.md). Итого: **две фронтенд-реализации** — веб-прототип (web/) и Flutter (nc_app/) для мобильной и веб-версии. Запуск: БД и API — `docker compose up -d`, `go run ./cmd/api`; веб-прототип — http://localhost:8080/app/ ; Flutter — `cd nc_app`, `flutter pub get`, `flutter run -d chrome` или `-d android`. Тестовые логины: student1@nc.kz, teacher1@nc.kz, director@nc.kz, admin@nc.kz — пароль password123.*
+**Шрифт веб-версии:** Gotham (fonts.cdnfonts.com), fallback Montserrat (поддержка кириллицы).
+
+**Мои заметки:** раздел «Мои файлы» заменён на «Мои заметки» — личные заметки с заголовком и текстом, дополнения (комментарии) к каждой заметке. Только владелец видит свои заметки. API: GET/POST /api/notes, GET /api/notes/{id}, POST /api/notes/{id}/comments.
+
+**Посты директора:** как форум — заголовок, текст, комментарии. Без анонимности. API: GET /api/director/posts, POST /api/director/posts (только директор), GET /api/director/posts/{id}, POST /api/director/posts/{id}/comments.
+
+*Последнее обновление контекста: **Мои заметки** (user_notes, user_note_comments) вместо «Мои файлы» в навигации; заметки и посты директора работают как форум (темы + ответы/комментарии, без анонимности). **Шрифт Gotham** для веб-версии (web/css, web/index.html). Убраны вкладки: библиотека, чат, уведомления, все пользователи. **Go-модуль** переименован в `github.com/q67q67q67-commits/college-system-app` (go.mod и все импорты), чтобы совпадал с репозиторием. Ошибки в **nc_app/lib** исправлены (присвоения List, импорты экранов, context после async). Добавлено **Flutter-приложение** (`nc_app/`) — мобильная и веб-версия по требованиям из Заметки и context: логин, навигация по ролям (NavigationRail на широком экране, BottomNavigationBar на узком), экраны: главная (события), расписание, оценки, группы, библиотека (поиск, бронь), форум (темы и ответы), события (список, удаление для admin/director), файлы, профиль директора, регламент, карта, профиль (смена пароля/телефона). Обработка 401 (onUnauthorized → выход и переход на логин). Палитра НАРХОЗ (#a82523, #d50032). Создан файл **`docs/ONBOARDING_AND_VERIFICATION.md`** — ознакомление с проектом, способ запуска и проверки, тестовые аккаунты, чек-лист проверки на баги и недостатки, известные ограничения. В `context.md` обновлены разделы 1 (стек), 6 (структура: nc_app, docs/ONBOARDING_AND_VERIFICATION.md), 10 (онбординг: сначала читать ONBOARDING_AND_VERIFICATION.md). Итого: **две фронтенд-реализации** — веб-прототип (web/) и Flutter (nc_app/) для мобильной и веб-версии. Запуск: БД и API — `docker compose up -d`, `go run ./cmd/api`; веб-прототип — http://localhost:8080/app/ ; Flutter — `cd nc_app`, `flutter pub get`, `flutter run -d chrome` или `-d android`. Тестовые логины: student1@nc.kz, teacher1@nc.kz, director@nc.kz, admin@nc.kz — пароль password123.*

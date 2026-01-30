@@ -44,6 +44,25 @@ class ApiService {
     return _handle(r);
   }
 
+  static Future<Map<String, dynamic>> uploadFile(String path, List<int> bytes, String filename) async {
+    final req = http.MultipartRequest('POST', Uri.parse('$baseUrl$path'));
+    req.headers['Authorization'] = 'Bearer $_token';
+    req.files.add(http.MultipartFile.fromBytes('file', bytes, filename: filename));
+    final stream = await req.send();
+    final r = await http.Response.fromStream(stream);
+    return _handle(r);
+  }
+
+  static Future<http.Response> getBytes(String path) async {
+    final r = await http.get(Uri.parse('$baseUrl$path'), headers: _headers);
+    if (r.statusCode == 401) {
+      onUnauthorized?.call();
+      throw ApiException(401, 'Сессия истекла');
+    }
+    if (r.statusCode >= 400) throw ApiException(r.statusCode, r.body);
+    return r;
+  }
+
   static dynamic _handle(http.Response r) {
     if (r.statusCode == 401) {
       onUnauthorized?.call();

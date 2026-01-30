@@ -24,7 +24,7 @@ class _EventsScreenState extends State<EventsScreen> {
     try {
       final res = await ApiService.get('/api/events?limit=20');
       setState(() {
-        _list = res is List ? res : [];
+        _list = res is List ? List<dynamic>.from(res as List) : [];
         _error = null;
       });
     } catch (e) {
@@ -57,7 +57,8 @@ class _EventsScreenState extends State<EventsScreen> {
                   ? IconButton(
                       icon: const Icon(Icons.delete),
                       onPressed: () async {
-                        if (!await showDialog<bool>(context: context, builder: (_) => AlertDialog(title: const Text('Удалить?'), actions: [TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Нет')), FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Да'))])) ?? false) return;
+                        final ok = await showDialog<bool>(context: context, builder: (_) => AlertDialog(title: const Text('Удалить?'), actions: [TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Нет')), FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Да'))]));
+                        if (ok != true) return;
                         try {
                           await ApiService.delete('/api/events/${e['id']}');
                           if (context.mounted) _load();

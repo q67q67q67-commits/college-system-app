@@ -1,6 +1,7 @@
 package chat
 
 import (
+	"encoding/json"
 	"log"
 	"net/http"
 	"strconv"
@@ -9,8 +10,7 @@ import (
 )
 
 // ServeWS обрабатывает WebSocket /api/chat/ws. Требует заголовок Authorization (JWT).
-// После апгрейда клиент отправляет/получает JSON: {"type":"message","body":"..."}.
-func (h *Hub) ServeWS(getUserID func(*http.Request) int64) http.HandlerFunc {
+func (h *Hub) ServeWS(getUserID func(*http.Request) int64, getFullName func(*http.Request) string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userID := getUserID(r)
 		if userID == 0 {
@@ -23,11 +23,13 @@ func (h *Hub) ServeWS(getUserID func(*http.Request) int64) http.HandlerFunc {
 			return
 		}
 		client := &Client{
-			hub:  h,
-			conn: conn,
-			send: make(chan []byte, 256),
+			Hub:      h,
+			Conn:     conn,
+			Send:     make(chan []byte, 256),
+			UserID:   userID,
+			FullName: getFullName(r),
 		}
-		client.hub.register <- client
+		client.Hub.register <- client
 		go client.writePump()
 		client.readPump()
 	}
@@ -35,32 +37,43 @@ func (h *Hub) ServeWS(getUserID func(*http.Request) int64) http.HandlerFunc {
 
 func (c *Client) readPump() {
 	defer func() {
-		c.hub.unregister <- c
-		c.conn.Close()
+		c.Hub.unregister <- c
+		c.Conn.Close()
 	}()
 	for {
-		_, msg, err := c.conn.ReadMessage()
+		_, msg, err := c.Conn.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
 				log.Printf("chat read: %v", err)
 			}
 			break
 		}
-		// Broadcast to all (в т.ч. отправителю)
-		c.hub.Broadcast(msg)
+		var toSend []byte = msg
+		var payload struct {
+			Type string `json:"type"`
+			Body string `json:"body"`
+		}
+		if json.Unmarshal(msg, &payload) == nil && payload.Type == "message" && payload.Body != "" {
+			if c.Hub.SaveMessage != nil {
+				if saved, err := c.Hub.SaveMessage(c.UserID, c.FullName, payload.Body); err == nil && len(saved) > 0 {
+					toSend = saved
+				}
+			}
+		}
+		c.Hub.Broadcast(toSend)
 	}
 }
 
 func (c *Client) writePump() {
-	defer c.conn.Close()
-	for msg := range c.send {
-		if err := c.conn.WriteMessage(websocket.TextMessage, msg); err != nil {
+	defer c.Conn.Close()
+	for msg := range c.Send {
+		if err := c.Conn.WriteMessage(websocket.TextMessage, msg); err != nil {
 			break
 		}
 	}
 }
 
-// GetUserIDFromHeader извлекает user_id из заголовка X-User-ID (после JWT middleware).
+// GetUserIDFromHeader извлекает user_id из заголовка X-User-ID.
 func GetUserIDFromHeader(r *http.Request) int64 {
 	s := r.Header.Get("X-User-ID")
 	if s == "" {
@@ -68,4 +81,9 @@ func GetUserIDFromHeader(r *http.Request) int64 {
 	}
 	id, _ := strconv.ParseInt(s, 10, 64)
 	return id
+}
+
+// GetFullNameFromHeader извлекает full_name из заголовка X-User-Name.
+func GetFullNameFromHeader(r *http.Request) string {
+	return r.Header.Get("X-User-Name")
 }

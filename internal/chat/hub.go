@@ -1,7 +1,6 @@
 package chat
 
 import (
-	"log"
 	"net/http"
 	"sync"
 
@@ -10,18 +9,24 @@ import (
 
 // Client — подключённый клиент чата.
 type Client struct {
-	hub  *Hub
-	conn *websocket.Conn
-	send chan []byte
+	Hub      *Hub
+	Conn     *websocket.Conn
+	Send     chan []byte
+	UserID   int64
+	FullName string
 }
+
+// SaveMessageFunc сохраняет сообщение в БД и возвращает JSON для рассылки. nil = не сохранять.
+type SaveMessageFunc func(userID int64, fullName, body string) (broadcastJSON []byte, err error)
 
 // Hub — центр рассылки сообщений (общий чат).
 type Hub struct {
-	clients    map[*Client]bool
-	broadcast  chan []byte
-	register   chan *Client
-	unregister chan *Client
-	mu         sync.RWMutex
+	clients      map[*Client]bool
+	broadcast    chan []byte
+	register     chan *Client
+	unregister   chan *Client
+	SaveMessage  SaveMessageFunc
+	mu           sync.RWMutex
 }
 
 // NewHub создаёт новый Hub.
@@ -46,16 +51,16 @@ func (h *Hub) Run() {
 			h.mu.Lock()
 			if _, ok := h.clients[c]; ok {
 				delete(h.clients, c)
-				close(c.send)
+				close(c.Send)
 			}
 			h.mu.Unlock()
 		case msg := <-h.broadcast:
 			h.mu.RLock()
 			for c := range h.clients {
 				select {
-				case c.send <- msg:
+				case c.Send <- msg:
 				default:
-					close(c.send)
+					close(c.Send)
 					delete(h.clients, c)
 				}
 			}

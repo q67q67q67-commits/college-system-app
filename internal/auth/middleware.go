@@ -28,15 +28,15 @@ func RequireAuth(secret string) func(http.Handler) http.Handler {
 				return
 			}
 			tokenString := strings.TrimPrefix(auth, prefix)
-			userID, role, email, err := ValidateToken(secret, tokenString)
+			userID, role, email, fullName, err := ValidateToken(secret, tokenString)
 			if err != nil {
 				http.Error(w, `{"error":"invalid or expired token"}`, http.StatusUnauthorized)
 				return
 			}
-			// Передаём в следующий handler через заголовки (простой способ без context)
 			r.Header.Set("X-User-ID", strconv.FormatInt(userID, 10))
 			r.Header.Set("X-User-Role", role)
 			r.Header.Set("X-User-Email", email)
+			r.Header.Set("X-User-Name", fullName)
 			next.ServeHTTP(w, r)
 		})
 	}

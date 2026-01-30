@@ -4,18 +4,19 @@ import (
 	"database/sql"
 	"time"
 
-	"github.com/narxoz-college/nc/internal/db"
+	"github.com/q67q67q67-commits/college-system-app/internal/db"
 )
 
 // ForumPostRow — пост форума (для выдачи: автор скрыт при is_anonymous).
 type ForumPostRow struct {
 	ID          int64     `json:"id"`
 	ParentID    *int64    `json:"parent_id"`
-	AuthorID    *int64    `json:"author_id,omitempty"`   // не отдавать при is_anonymous
-	AuthorName  string    `json:"author_name,omitempty"` // пусто при is_anonymous
+	AuthorID    *int64    `json:"author_id,omitempty"`
+	AuthorName  string    `json:"author_name,omitempty"`
 	IsAnonymous bool      `json:"is_anonymous"`
 	Title       string    `json:"title"`
 	Body        string    `json:"body"`
+	MediaURL    string    `json:"media_url,omitempty"`
 	CreatedAt   time.Time `json:"created_at"`
 }
 
@@ -29,7 +30,7 @@ func ForumPostsList(parentID *int64, limit, offset int) ([]ForumPostRow, error) 
 	if parentID == nil {
 		rows, err = db.DB.Query(`
 			SELECT p.id, p.parent_id, p.author_id, u.full_name, p.is_anonymous,
-			       COALESCE(p.title,''), p.body, p.created_at
+			       COALESCE(p.title,''), p.body, COALESCE(p.media_url,''), p.created_at
 			FROM forum_posts p
 			LEFT JOIN users u ON u.id = p.author_id
 			WHERE p.parent_id IS NULL
@@ -38,7 +39,7 @@ func ForumPostsList(parentID *int64, limit, offset int) ([]ForumPostRow, error) 
 	} else {
 		rows, err = db.DB.Query(`
 			SELECT p.id, p.parent_id, p.author_id, u.full_name, p.is_anonymous,
-			       COALESCE(p.title,''), p.body, p.created_at
+			       COALESCE(p.title,''), p.body, COALESCE(p.media_url,''), p.created_at
 			FROM forum_posts p
 			LEFT JOIN users u ON u.id = p.author_id
 			WHERE p.parent_id = $1
@@ -57,7 +58,7 @@ func ForumPostsList(parentID *int64, limit, offset int) ([]ForumPostRow, error) 
 		var authorName sql.NullString
 		var parentIDVal sql.NullInt64
 		err := rows.Scan(&post.ID, &parentIDVal, &authorID, &authorName, &post.IsAnonymous,
-			&post.Title, &post.Body, &post.CreatedAt)
+			&post.Title, &post.Body, &post.MediaURL, &post.CreatedAt)
 		if err != nil {
 			return nil, err
 		}
@@ -76,11 +77,25 @@ func ForumPostsList(parentID *int64, limit, offset int) ([]ForumPostRow, error) 
 }
 
 // CreateForumPost создаёт пост (тему или ответ).
-func CreateForumPost(parentID *int64, authorID int64, isAnonymous bool, title, body string) (int64, error) {
+func CreateForumPost(parentID *int64, authorID int64, isAnonymous bool, title, body, mediaURL string) (int64, error) {
 	var id int64
 	err := db.DB.QueryRow(`
-		INSERT INTO forum_posts (parent_id, author_id, is_anonymous, title, body)
-		VALUES ($1, $2, $3, $4, $5) RETURNING id
-	`, parentID, authorID, isAnonymous, title, body).Scan(&id)
+		INSERT INTO forum_posts (parent_id, author_id, is_anonymous, title, body, media_url)
+		VALUES ($1, $2, $3, $4, $5, NULLIF($6,'')) RETURNING id
+	`, parentID, authorID, isAnonymous, title, body, mediaURL).Scan(&id)
 	return id, err
+}
+
+// DeleteForumPost удаляет пост. isAdmin — может удалить любой, иначе только свой.
+func DeleteForumPost(id, userID int64, isAdmin bool) (bool, error) {
+	if isAdmin {
+		_, err := db.DB.Exec(`DELETE FROM forum_posts WHERE id = $1`, id)
+		return true, err
+	}
+	r, err := db.DB.Exec(`DELETE FROM forum_posts WHERE id = $1 AND author_id = $2`, id, userID)
+	if err != nil {
+		return false, err
+	}
+	n, _ := r.RowsAffected()
+	return n > 0, nil
 }

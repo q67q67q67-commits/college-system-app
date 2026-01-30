@@ -284,6 +284,12 @@
 **Response 201:** `{"id": 1, "path": "5/document.pdf", "size": 1024}`  
 **Response 403:** `{"error":"storage quota exceeded (2 GB limit)"}`
 
+### GET /api/files/{id}/download
+
+Скачать файл. Требует авторизацию.
+
+**Response 200:** бинарное содержимое файла с заголовками Content-Type, Content-Disposition.
+
 ### DELETE /api/files/{id}
 
 Удалить свой файл. `{id}` — ID записи в user_files.
@@ -423,6 +429,102 @@ WebSocket для чата. После апгрейда клиент отправ
 Удалить событие.
 
 **Response 200:** `{"status":"ok"}`
+
+### GET /api/users
+
+Список всех пользователей (только admin, director).
+
+**Response 200:** массив `[{id, full_name, email, role, phone}]`
+
+### PUT /api/users/{id}
+
+Обновить пользователя (admin, director).
+
+**Request:** `{"full_name":"...","email":"...","phone":"...","role":"student"}`
+
+### DELETE /api/users/{id}
+
+Деактивировать пользователя (admin, director).
+
+### GET /api/profile
+
+Данные профиля текущего пользователя (id, email, full_name, phone, role, avatar_url).
+
+### GET /api/notifications
+
+Список уведомлений (все роли).
+
+**Response 200:** массив `[{id, title, body, created_by, created_at}]`
+
+### POST /api/notifications
+
+Создать уведомление (admin, director).
+
+**Request:** `{"title":"...","body":"..."}`
+
+### GET /api/chat/messages
+
+История сообщений чата.
+
+**Response 200:** `[{id, user_id, author_name, body, media_url, created_at}]`
+
+### DELETE /api/chat/messages/{id}
+
+Удалить своё сообщение или любое (admin/director).
+
+### DELETE /api/forum/posts/{id}
+
+Удалить свой пост или любой (admin/director).
+
+### GET /api/director/posts
+
+Посты директора (публично). Как форум: title, body.
+
+### GET /api/director/posts/{id}
+
+Пост с комментариями. Auth.
+
+### POST /api/director/posts
+
+Добавить пост (только director). JSON: `{title, body}`. body обязателен.
+
+### POST /api/director/posts/{id}/comments
+
+Добавить комментарий к посту. Auth. JSON: `{body}`.
+
+### GET /api/notes
+
+Список заметок текущего пользователя. Auth.
+
+### POST /api/notes
+
+Создать заметку. Auth. JSON: `{title, body}`. body обязателен.
+
+### GET /api/notes/{id}
+
+Заметка с дополнениями (комментариями). Auth.
+
+### POST /api/notes/{id}/comments
+
+Добавить дополнение к заметке. Auth. JSON: `{body}`.
+
+### GET /api/building-map
+
+Карта здания (публично). `{content, image_url}`
+
+### PUT /api/building-map
+
+Обновить карту (admin, director). `{content, image_url}`
+
+### POST /api/profile/avatar
+
+Загрузить фото профиля. Multipart: file.
+
+**Response 200:** `{avatar_url: "/uploads/avatars/1.jpg"}`
+
+### GET /api/users/{id}
+
+Профиль пользователя по ID (для просмотра по клику на имя).
 
 ---
 

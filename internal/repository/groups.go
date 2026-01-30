@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"github.com/narxoz-college/nc/internal/db"
+	"github.com/q67q67q67-commits/college-system-app/internal/db"
 )
 
 // GroupRow — группа с количеством студентов.

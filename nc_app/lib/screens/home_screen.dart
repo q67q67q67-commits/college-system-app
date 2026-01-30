@@ -22,7 +22,7 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       final res = await ApiService.get('/api/events?limit=20');
       setState(() {
-        _list = res is List ? res : [];
+        _list = res is List ? List<dynamic>.from(res as List) : [];
         _error = null;
       });
     } catch (e) {

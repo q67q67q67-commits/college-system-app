@@ -22,7 +22,7 @@ class _GroupsScreenState extends State<GroupsScreen> {
     try {
       final res = await ApiService.get('/api/groups');
       setState(() {
-        _list = res is List ? res : [];
+        _list = res is List ? List<dynamic>.from(res as List) : [];
         _error = null;
       });
     } catch (e) {
@@ -58,7 +58,7 @@ class _GroupsScreenState extends State<GroupsScreen> {
                       context: context,
                       builder: (_) => ListView(
                         shrinkWrap: true,
-                        children: (students is List ? students : []).map<Widget>((s) => ListTile(title: Text(s['full_name']?.toString() ?? ''), subtitle: Text(s['email']?.toString() ?? ''))).toList(),
+                        children: (students is List ? (students as List) : <dynamic>[]).map<Widget>((s) => ListTile(title: Text(s['full_name']?.toString() ?? ''), subtitle: Text(s['email']?.toString() ?? ''))).toList(),
                       ),
                     );
                   } catch (_) {}

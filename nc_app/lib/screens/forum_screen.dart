@@ -27,7 +27,7 @@ class _ForumScreenState extends State<ForumScreen> {
     try {
       final res = await ApiService.get('/api/forum/posts?limit=30');
       setState(() {
-        _list = res is List ? res : [];
+        _list = res is List ? List<dynamic>.from(res as List) : [];
         _list = _list.where((p) => p['parent_id'] == null).toList();
         _error = null;
       });
@@ -72,7 +72,7 @@ class _ForumScreenState extends State<ForumScreen> {
                           Text(p['body']?.toString() ?? '', style: Theme.of(context).textTheme.bodyLarge),
                           const Divider(),
                           Text('Ответы (${replies is List ? replies.length : 0})', style: Theme.of(context).textTheme.titleSmall),
-                          ...(replies is List ? replies : []).map<Widget>((r) => ListTile(title: Text(r['body']?.toString() ?? ''), subtitle: Text(r['is_anonymous'] == true ? 'Анонимно' : r['author_name']?.toString() ?? ''))),
+                          ...(replies is List ? (replies as List).map<Widget>((r) => ListTile(title: Text(r['body']?.toString() ?? ''), subtitle: Text(r['is_anonymous'] == true ? 'Анонимно' : r['author_name']?.toString() ?? ''))) : <Widget>[]),
                         ],
                       ),
                     ),

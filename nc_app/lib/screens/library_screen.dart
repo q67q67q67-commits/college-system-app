@@ -31,7 +31,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
       final path = q.isEmpty ? '/api/library/books?limit=20' : '/api/library/books?q=${Uri.encodeComponent(q)}&limit=20';
       final res = await ApiService.get(path);
       setState(() {
-        _list = res is List ? res : [];
+        _list = res is List ? List<dynamic>.from(res as List) : [];
         _error = null;
       });
     } catch (e) {

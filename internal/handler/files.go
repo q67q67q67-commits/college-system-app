@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"github.com/narxoz-college/nc/internal/repository"
+	"github.com/q67q67q67-commits/college-system-app/internal/repository"
 )
 
 // FilesHandler — загрузка/список/удаление файлов с проверкой квоты 2 ГБ.
@@ -89,6 +89,38 @@ func (h *FilesHandler) ServeUpload(w http.ResponseWriter, r *http.Request) {
 		"path": relPath,
 		"size": n,
 	})
+}
+
+// ServeDownload: GET /api/files/:id/download — скачать файл.
+func (h *FilesHandler) ServeDownload(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
+		return
+	}
+	idStr := r.PathValue("id")
+	id, _ := strconv.ParseInt(idStr, 10, 64)
+	if id == 0 {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "id required"})
+		return
+	}
+	userID := userIDFromRequest(r)
+	path, filename, contentType, err := repository.GetUserFileForDownload(id, userID)
+	if err != nil || path == "" {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "not found"})
+		return
+	}
+	fullPath := filepath.Join(h.UploadPath, path)
+	f, err := os.Open(fullPath)
+	if err != nil {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "not found"})
+		return
+	}
+	defer f.Close()
+	if contentType != "" {
+		w.Header().Set("Content-Type", contentType)
+	}
+	w.Header().Set("Content-Disposition", "attachment; filename=\""+filename+"\"")
+	io.Copy(w, f)
 }
 
 // ServeDelete: DELETE /api/files/:id — удалить файл пользователя.

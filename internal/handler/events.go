@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/narxoz-college/nc/internal/repository"
+	"github.com/q67q67q67-commits/college-system-app/internal/repository"
 )
 
 // EventsHandler — события/новости (главная, лента). CRUD — admin/director.

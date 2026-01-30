@@ -20,7 +20,7 @@
 
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  font-family: 'Gotham', 'Gotham Book', 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-size: 16px;
   color: var(--text-primary);
   background: var(--bg-page);
@@ -98,7 +98,7 @@ body {
   width: 100%;
   padding: 0.65rem 0.75rem;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 2px;
   font-size: 1rem;
 }
 .login-form input:focus {
@@ -127,7 +127,7 @@ body {
   justify-content: center;
   padding: 0.5rem 1rem;
   border: none;
-  border-radius: 8px;
+  border-radius: 2px;
   font-size: 0.95rem;
   font-weight: 500;
   cursor: pointer;
@@ -281,7 +281,7 @@ body {
 /* ========== Карточки и списки ========== */
 .card {
   background: var(--bg-card);
-  border-radius: 10px;
+  border-radius: 2px;
   padding: 1rem 1.25rem;
   margin-bottom: 1rem;
   box-shadow: var(--shadow);
@@ -316,7 +316,7 @@ body {
   width: 100%;
   padding: 0.6rem 0.75rem;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 2px;
   font-size: 1rem;
 }
 .form-row textarea { min-height: 80px; resize: vertical; }
@@ -326,7 +326,7 @@ body {
   height: 320px;
   overflow-y: auto;
   background: #fafafa;
-  border-radius: 8px;
+  border-radius: 2px;
   padding: 1rem;
   margin-bottom: 1rem;
 }
@@ -334,7 +334,7 @@ body {
   margin-bottom: 0.75rem;
   padding: 0.5rem 0.75rem;
   background: var(--bg-card);
-  border-radius: 8px;
+  border-radius: 2px;
   max-width: 85%;
   box-shadow: 0 1px 2px rgba(0,0,0,0.06);
 }
@@ -347,7 +347,7 @@ body {
   flex: 1;
   padding: 0.65rem;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 2px;
 }
 
 /* ========== Адаптив: мобильный ========== */
@@ -393,15 +393,23 @@ body {
 .grid-2 { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
 
 .attachments-list { margin-top: 0.5rem; }
-.attachment-item { font-size: 0.9rem; margin: 0.25rem 0; padding: 0.5rem; background: #f9f9f9; border-radius: 6px; }
+.attachment-item { font-size: 0.9rem; margin: 0.25rem 0; padding: 0.5rem; background: #f9f9f9; border-radius: 2px; }
 .forum-topic-body { white-space: pre-wrap; margin: 0.5rem 0; }
 
 .director-card .director-header { display: flex; align-items: center; gap: 1rem; margin-top: 0.5rem; }
 .director-avatar { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; }
-.director-avatar-placeholder { width: 80px; height: 80px; border-radius: 50%; background: rgba(213,0,50,0.15); display: flex; align-items: center; justify-content: center; font-size: 2rem; }
+.director-avatar-placeholder { width: 80px; height: 80px; border-radius: 2px; background: rgba(213,0,50,0.15); }
+.posts-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 0.5rem; }
+.post-cell { aspect-ratio: 1; background: #f5f5f5; overflow: hidden; border-radius: 2px; position: relative; }
+.post-cell img, .post-cell video { width: 100%; height: 100%; object-fit: cover; }
+.post-placeholder { width: 100%; height: 100%; background: #e0e0e0; }
+.post-caption { font-size: 0.8rem; padding: 0.25rem; margin: 0; }
 .director-name { font-size: 1.2rem; color: var(--narxoz-dark); }
 
-.map-placeholder { margin-top: 1rem; padding: 3rem; background: #f0f0f0; border-radius: 8px; text-align: center; color: var(--text-secondary); }
+.map-placeholder { margin-top: 1rem; padding: 3rem; background: #f0f0f0; border-radius: 2px; text-align: center; color: var(--text-secondary); }
+.badge { border-radius: 2px; }
+.modal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 200; }
+.modal .modal-content { max-width: 400px; width: 90%; }
 
 /* Нижняя навигация (мобильный) */
 .bottom-nav { display: none; position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg-card); border-top: 1px solid var(--border); z-index: 98; padding: 0.25rem 0; }

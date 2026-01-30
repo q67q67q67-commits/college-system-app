@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/narxoz-college/nc/internal/repository"
+	"github.com/q67q67q67-commits/college-system-app/internal/repository"
 )
 
 // LibraryHandler — поиск книг, экземпляры, бронирование.

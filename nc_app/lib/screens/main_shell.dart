@@ -10,7 +10,9 @@ import 'groups_screen.dart';
 import 'library_screen.dart';
 import 'forum_screen.dart';
 import 'events_screen.dart';
-import 'files_screen.dart';
+import 'notes_screen.dart';
+import 'teacher_grades_screen.dart';
+import 'teacher_homework_screen.dart';
 import 'profile_screen.dart';
 import 'director_screen.dart';
 import 'regulations_screen.dart';
@@ -26,7 +28,7 @@ enum NavItem {
   library('Библиотека', Icons.menu_book),
   forum('Форум', Icons.forum),
   events('События', Icons.event),
-  files('Мои файлы', Icons.folder),
+  notes('Мои заметки', Icons.note),
   director('Профиль директора', Icons.person),
   regulations('Регламент', Icons.description),
   map('Карта', Icons.map),
@@ -51,24 +53,26 @@ class _MainShellState extends State<MainShell> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final auth = context.read<AuthProvider>();
+      final ctx = context;
+      final auth = ctx.read<AuthProvider>();
       ApiService.onUnauthorized = () async {
         await auth.logout();
-        if (context.mounted) Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder: (_) => const LoginScreen()), (_) => false);
+        if (ctx.mounted) Navigator.of(ctx).pushAndRemoveUntil(MaterialPageRoute(builder: (_) => const LoginScreen()), (_) => false);
       };
     });
   }
 
   List<NavItem> _navItems(AuthProvider auth) {
     final role = auth.role ?? '';
-    final items = <NavItem>[NavItem.home, NavItem.schedule];
+    final items = <NavItem>[NavItem.home];
+    if (role == 'student' || role == 'teacher') items.add(NavItem.schedule);
     if (role == 'student') items.add(NavItem.grades);
-    if (auth.isTeacher) {
-      items.add(NavItem.groups);
+    if (role == 'teacher' || role == 'director' || role == 'admin') items.add(NavItem.groups);
+    if (role == 'teacher') {
       items.add(NavItem.teacherGrades);
       items.add(NavItem.teacherHomework);
     }
-    items.addAll([NavItem.library, NavItem.forum, NavItem.events, NavItem.files]);
+    items.addAll([NavItem.forum, NavItem.events, NavItem.notes]);
     if (auth.showDirectorProfile) items.add(NavItem.director);
     items.addAll([NavItem.regulations, NavItem.map, NavItem.profile]);
     return items;
@@ -94,8 +98,8 @@ class _MainShellState extends State<MainShell> {
         return const ForumScreen();
       case NavItem.events:
         return const EventsScreen();
-      case NavItem.files:
-        return const FilesScreen();
+      case NavItem.notes:
+        return const NotesScreen();
       case NavItem.director:
         return const DirectorScreen();
       case NavItem.regulations:

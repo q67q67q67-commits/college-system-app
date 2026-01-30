@@ -3,12 +3,49 @@ import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../services/api_service.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  Map<String, dynamic>? _profile;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final p = await ApiService.get('/api/profile');
+      setState(() {
+        _profile = p != null ? Map<String, dynamic>.from(p as Map) : null;
+        _error = null;
+      });
+    } catch (e) {
+      setState(() {
+        _profile = null;
+        _error = e.toString();
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
+    if (_error != null) {
+      return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Text(_error!, style: const TextStyle(color: Colors.red)),
+        TextButton(onPressed: _load, child: const Text('Повторить')),
+      ]));
+    }
+    final p = _profile ?? {};
+    final phone = p['phone']?.toString() ?? '';
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -18,9 +55,10 @@ class ProfileScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Имя: ${auth.fullName ?? ""}', style: Theme.of(context).textTheme.titleMedium),
-                Text('Email: ${auth.email ?? ""}'),
-                Text('Роль: ${auth.role ?? ""}'),
+                Text('Имя: ${p['full_name'] ?? auth.fullName ?? ""}', style: Theme.of(context).textTheme.titleMedium),
+                Text('Email: ${p['email'] ?? auth.email ?? ""}'),
+                Text('Телефон: ${phone.isNotEmpty ? phone : "—"}'),
+                Text('Роль: ${p['role'] ?? auth.role ?? ""}'),
               ],
             ),
           ),
@@ -29,7 +67,7 @@ class ProfileScreen extends StatelessWidget {
         Card(
           child: Padding(
             padding: const EdgeInsets.all(16),
-            child: _ChangePasswordForm(),
+            child: _ChangePasswordForm(initialPhone: phone),
           ),
         ),
       ],
@@ -38,13 +76,22 @@ class ProfileScreen extends StatelessWidget {
 }
 
 class _ChangePasswordForm extends StatefulWidget {
+  final String initialPhone;
+  const _ChangePasswordForm({this.initialPhone = ''});
   @override
   State<_ChangePasswordForm> createState() => _ChangePasswordFormState();
 }
 
 class _ChangePasswordFormState extends State<_ChangePasswordForm> {
-  final _password = TextEditingController();
-  final _phone = TextEditingController();
+  late final TextEditingController _password;
+  late final TextEditingController _phone;
+
+  @override
+  void initState() {
+    super.initState();
+    _password = TextEditingController();
+    _phone = TextEditingController(text: widget.initialPhone);
+  }
   bool _loading = false;
 
   @override

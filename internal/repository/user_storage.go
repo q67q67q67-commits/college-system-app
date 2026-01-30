@@ -3,7 +3,7 @@ package repository
 import (
 	"database/sql"
 
-	"github.com/narxoz-college/nc/internal/db"
+	"github.com/q67q67q67-commits/college-system-app/internal/db"
 )
 
 const storageLimitBytes = 2147483648 // 2 ГБ
@@ -79,4 +79,16 @@ func GetUserFilePath(id, userID int64) (path string, err error) {
 		return "", nil
 	}
 	return path, err
+}
+
+// GetUserFileForDownload возвращает path, filename, content_type для скачивания.
+func GetUserFileForDownload(id, userID int64) (path, filename, contentType string, err error) {
+	err = db.DB.QueryRow(`
+		SELECT path, COALESCE(filename, path), COALESCE(content_type, 'application/octet-stream')
+		FROM user_files WHERE id = $1 AND user_id = $2
+	`, id, userID).Scan(&path, &filename, &contentType)
+	if err == sql.ErrNoRows {
+		return "", "", "", nil
+	}
+	return path, filename, contentType, err
 }

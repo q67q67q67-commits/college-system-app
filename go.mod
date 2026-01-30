@@ -1,4 +1,4 @@
-module github.com/narxoz-college/nc
+module github.com/q67q67q67-commits/college-system-app
 
 go 1.22
 

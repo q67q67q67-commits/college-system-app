@@ -24,7 +24,7 @@ class _GradesScreenState extends State<GradesScreen> {
       final grades = await ApiService.get('/api/grades');
       final gpaRes = await ApiService.get('/api/grades/gpa');
       setState(() {
-        _list = grades is List ? grades : [];
+        _list = grades is List ? List<dynamic>.from(grades as List) : [];
         _gpa = (gpaRes['gpa'] as num?)?.toDouble();
         _error = null;
       });
@@ -45,13 +45,13 @@ class _GradesScreenState extends State<GradesScreen> {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          if (_gpa != null) Card(child: Padding(padding: const EdgeInsets.all(16), child: Text('GPA: $_gpa', style: Theme.of(context).textTheme.titleLarge))),
+          if (_gpa != null) Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('Средний балл (GPA): $_gpa', style: Theme.of(context).textTheme.titleLarge), const SizedBox(height: 4), Text('Оценки по 100-балльной шкале', style: Theme.of(context).textTheme.bodySmall)]))),
           const SizedBox(height: 8),
           ..._list.map<Widget>((g) => Card(
                 margin: const EdgeInsets.only(bottom: 4),
                 child: ListTile(
                   title: Text(g['subject']?.toString() ?? ''),
-                  subtitle: Text('${g['grade_date']} — ${g['grade']}${g['comment'] != null ? ' · ${g['comment']}' : ''}'),
+                  subtitle: Text('${g['grade_date']} — ${g['grade']} баллов${g['comment'] != null ? ' · ${g['comment']}' : ''}'),
                 ),
               )),
         ],

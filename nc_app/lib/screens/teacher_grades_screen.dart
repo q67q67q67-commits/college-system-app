@@ -38,8 +38,8 @@ class _TeacherGradesScreenState extends State<TeacherGradesScreen> {
       final g = await ApiService.get('/api/groups');
       final s = await ApiService.get('/api/schedule');
       setState(() {
-        _groups = g is List ? g : [];
-        _schedule = s is List ? s : [];
+        _groups = g is List ? List<dynamic>.from(g as List) : [];
+        _schedule = s is List ? List<dynamic>.from(s as List) : [];
         _error = null;
       });
     } catch (e) {
@@ -53,7 +53,7 @@ class _TeacherGradesScreenState extends State<TeacherGradesScreen> {
   Future<void> _loadStudents(int groupId) async {
     try {
       final res = await ApiService.get('/api/groups/$groupId/students');
-      setState(() => _students = res is List ? res : []);
+      setState(() => _students = res is List ? List<dynamic>.from(res as List) : []);
     } catch (_) {
       setState(() => _students = []);
     }
@@ -85,7 +85,7 @@ class _TeacherGradesScreenState extends State<TeacherGradesScreen> {
       padding: const EdgeInsets.all(16),
       children: [
         DropdownButtonFormField<int>(
-          value: _selectedGroupId,
+          initialValue: _selectedGroupId,
           decoration: const InputDecoration(labelText: 'Группа', border: OutlineInputBorder()),
           items: _groups.map((g) => DropdownMenuItem<int>(value: (g['id'] as num).toInt(), child: Text(g['name']?.toString() ?? ''))).toList(),
           onChanged: (v) {
@@ -99,16 +99,16 @@ class _TeacherGradesScreenState extends State<TeacherGradesScreen> {
         ),
         const SizedBox(height: 8),
         DropdownButtonFormField<int>(
-          value: _selectedStudentId,
+          initialValue: _selectedStudentId,
           decoration: const InputDecoration(labelText: 'Студент', border: OutlineInputBorder()),
           items: _students.map((s) => DropdownMenuItem<int>(value: (s['user_id'] as num).toInt(), child: Text(s['full_name']?.toString() ?? ''))).toList(),
           onChanged: (v) => setState(() => _selectedStudentId = v),
         ),
         const SizedBox(height: 8),
         DropdownButtonFormField<int>(
-          value: _selectedScheduleId,
+          initialValue: _selectedScheduleId,
           decoration: const InputDecoration(labelText: 'Занятие', border: OutlineInputBorder()),
-          items: _schedule.map((s) => DropdownMenuItem<int>(value: (s['id'] as num).toInt(), child: Text('${s['subject']} · ${s['room']}' ?? ''))).toList(),
+          items: _schedule.map((s) => DropdownMenuItem<int>(value: (s['id'] as num).toInt(), child: Text('${s['subject']} · ${s['room']}'))).toList(),
           onChanged: (v) => setState(() => _selectedScheduleId = v),
         ),
         const SizedBox(height: 8),
