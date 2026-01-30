@@ -1,12 +1,14 @@
 // Narxoz College (NC) — точка входа API-сервера.
 // Запуск: go run ./cmd/api
 // Требует Go 1.22+ (PathValue в роутинге).
+// Веб-прототип: http://localhost:8080/app/
 package main
 
 import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 
 	"github.com/narxoz-college/nc/internal/auth"
 	"github.com/narxoz-college/nc/internal/chat"
@@ -19,6 +21,24 @@ func main() {
 	if err := run(os.Args); err != nil {
 		log.Fatalf("api: %v", err)
 	}
+}
+
+// corsMiddleware добавляет CORS-заголовки для веб-прототипа.
+func corsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		origin := r.Header.Get("Origin")
+		if origin == "" {
+			origin = "*"
+		}
+		w.Header().Set("Access-Control-Allow-Origin", origin)
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 func run(args []string) error {
@@ -37,6 +57,8 @@ func run(args []string) error {
 	eventsHandler := &handler.EventsHandler{}
 	homeworkHandler := &handler.HomeworkHandler{}
 	filesHandler := &handler.FilesHandler{UploadPath: cfg.UploadPath}
+	profileHandler := &handler.ProfileHandler{}
+	directorHandler := &handler.DirectorHandler{}
 
 	chatHub := chat.NewHub()
 	go chatHub.Run()
@@ -51,9 +73,16 @@ func run(args []string) error {
 	// Публичные
 	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		_, _ = w.Write([]byte("NC API\n"))
+		_, _ = w.Write([]byte("NC API. Prototype: /app/\n"))
 	})
 	mux.HandleFunc("POST /auth/login", authHandler.Login)
+
+	// Веб-прототип: статика из ./web по пути /app/
+	webDir := filepath.Join("web")
+	mux.Handle("GET /app/", http.StripPrefix("/app/", http.FileServer(http.Dir(webDir))))
+	mux.HandleFunc("GET /app", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/app/", http.StatusFound)
+	})
 
 	// С авторизацией (любая роль)
 	mux.Handle("GET /api/schedule", requireAuth(http.HandlerFunc(scheduleHandler.ServeSchedule)))
@@ -74,6 +103,8 @@ func run(args []string) error {
 	mux.Handle("POST /api/files/upload", requireAuth(http.HandlerFunc(filesHandler.ServeUpload)))
 	mux.Handle("DELETE /api/files/{id}", requireAuth(http.HandlerFunc(filesHandler.ServeDelete)))
 	mux.Handle("GET /api/chat/ws", requireAuth(http.HandlerFunc(chatWS)))
+	mux.Handle("PUT /api/profile", requireAuth(http.HandlerFunc(profileHandler.ServeUpdate)))
+	mux.Handle("GET /api/director", http.HandlerFunc(directorHandler.ServeGet))
 
 	// Только преподаватель: оценки, ДЗ
 	mux.Handle("POST /api/grades", requireTeacher(http.HandlerFunc(gradesHandler.ServeCreateGrade)))
@@ -89,5 +120,5 @@ func run(args []string) error {
 	mux.Handle("DELETE /api/events/{id}", requireAdminDirector(http.HandlerFunc(eventsHandler.ServeDelete)))
 
 	log.Printf("api: listening on %s", cfg.Addr)
-	return http.ListenAndServe(cfg.Addr, mux)
+	return http.ListenAndServe(cfg.Addr, corsMiddleware(mux))
 }

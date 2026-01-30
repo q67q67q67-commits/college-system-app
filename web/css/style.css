@@ -1,0 +1,417 @@
+/* Narxoz College — палитра с сайта университета */
+:root {
+  --narxoz-dark: #a82523;
+  --narxoz-red: #d50032;
+  --narxoz-red-hover: #b8002a;
+  --narxoz-dark-hover: #8c1f1d;
+  --bg-page: #f5f5f5;
+  --bg-card: #ffffff;
+  --text-primary: #1a1a1a;
+  --text-secondary: #555;
+  --border: #e0e0e0;
+  --shadow: 0 2px 8px rgba(0,0,0,0.08);
+  --sidebar-width: 240px;
+  --topbar-height: 56px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  font-size: 16px;
+  color: var(--text-primary);
+  background: var(--bg-page);
+  min-height: 100vh;
+}
+
+#app {
+  min-height: 100vh;
+}
+
+.hidden { display: none !important; }
+.error-msg { color: var(--narxoz-red); font-size: 0.9rem; margin-bottom: 0.5rem; }
+
+/* ========== Экраны ========== */
+.screen {
+  display: none;
+  min-height: 100vh;
+}
+.screen.active {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ========== Экран входа ========== */
+#screen-login {
+  background: linear-gradient(160deg, var(--narxoz-dark) 0%, var(--narxoz-red) 100%);
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.login-header {
+  text-align: center;
+  color: #fff;
+  margin-bottom: 2rem;
+}
+.login-header .logo {
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.login-header .tagline {
+  font-size: 0.95rem;
+  opacity: 0.95;
+  margin-top: 0.25rem;
+}
+
+.login-main {
+  width: 100%;
+  max-width: 380px;
+}
+
+.login-form {
+  background: var(--bg-card);
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: var(--shadow);
+}
+.login-form h1 {
+  margin: 0 0 1.5rem;
+  font-size: 1.35rem;
+  color: var(--text-primary);
+}
+.login-form label {
+  display: block;
+  margin-bottom: 1rem;
+}
+.login-form label span {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.35rem;
+}
+.login-form input {
+  width: 100%;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 1rem;
+}
+.login-form input:focus {
+  outline: none;
+  border-color: var(--narxoz-red);
+  box-shadow: 0 0 0 2px rgba(213,0,50,0.2);
+}
+.login-form .btn {
+  width: 100%;
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+}
+
+.login-hint {
+  text-align: center;
+  color: rgba(255,255,255,0.9);
+  font-size: 0.8rem;
+  margin-top: 1.5rem;
+  max-width: 380px;
+}
+
+/* ========== Кнопки ========== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.btn-primary {
+  background: var(--narxoz-red);
+  color: #fff;
+}
+.btn-primary:hover {
+  background: var(--narxoz-red-hover);
+}
+.btn-secondary {
+  background: var(--narxoz-dark);
+  color: #fff;
+}
+.btn-secondary:hover {
+  background: var(--narxoz-dark-hover);
+}
+.btn-text {
+  background: transparent;
+  color: var(--narxoz-red);
+}
+.btn-text:hover {
+  background: rgba(213,0,50,0.08);
+}
+.btn-danger {
+  background: #c62828;
+  color: #fff;
+}
+.btn-danger:hover {
+  background: #b71c1c;
+}
+.btn-small {
+  padding: 0.35rem 0.65rem;
+  font-size: 0.85rem;
+}
+
+/* ========== Основное приложение ========== */
+#screen-app {
+  display: none;
+  flex-direction: row;
+  min-height: 100vh;
+}
+#screen-app.active {
+  display: flex;
+}
+
+.sidebar {
+  width: var(--sidebar-width);
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+.sidebar-header {
+  padding: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+.logo-small {
+  font-weight: 700;
+  color: var(--narxoz-red);
+  font-size: 1.25rem;
+}
+.user-name {
+  display: block;
+  font-weight: 500;
+  margin-top: 0.25rem;
+  font-size: 0.9rem;
+}
+.user-role {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  text-transform: capitalize;
+}
+
+.nav {
+  flex: 1;
+  padding: 0.5rem 0;
+  overflow-y: auto;
+}
+.nav-item {
+  display: flex;
+  align-items: center;
+  padding: 0.65rem 1rem;
+  color: var(--text-primary);
+  text-decoration: none;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background 0.15s;
+  border-left: 3px solid transparent;
+}
+.nav-item:hover {
+  background: rgba(213,0,50,0.06);
+}
+.nav-item.active {
+  background: rgba(213,0,50,0.1);
+  border-left-color: var(--narxoz-red);
+  color: var(--narxoz-red);
+  font-weight: 500;
+}
+
+.sidebar-footer {
+  padding: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.main-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.top-bar {
+  height: var(--topbar-height);
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 1rem;
+  flex-shrink: 0;
+}
+.btn-menu {
+  display: none;
+  width: 40px;
+  height: 40px;
+  margin-right: 0.5rem;
+  border: none;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='2'%3E%3Cline x1='3' y1='6' x2='21' y2='6'/%3E%3Cline x1='3' y1='12' x2='21' y2='12'/%3E%3Cline x1='3' y1='18' x2='21' y2='18'/%3E%3C/svg%3E") center no-repeat;
+  cursor: pointer;
+}
+.page-title {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.content {
+  flex: 1;
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+/* ========== Карточки и списки ========== */
+.card {
+  background: var(--bg-card);
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1rem;
+  box-shadow: var(--shadow);
+}
+.card h3 {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  color: var(--narxoz-dark);
+}
+.list-item {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+.list-item:last-child { border-bottom: none; }
+.list-item .meta { font-size: 0.85rem; color: var(--text-secondary); }
+
+/* ========== Формы в контенте ========== */
+.form-row {
+  margin-bottom: 1rem;
+}
+.form-row label {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.35rem;
+}
+.form-row input, .form-row textarea {
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 1rem;
+}
+.form-row textarea { min-height: 80px; resize: vertical; }
+
+/* ========== Чат ========== */
+.chat-messages {
+  height: 320px;
+  overflow-y: auto;
+  background: #fafafa;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+.chat-msg {
+  margin-bottom: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--bg-card);
+  border-radius: 8px;
+  max-width: 85%;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+}
+.chat-msg .time { font-size: 0.75rem; color: var(--text-secondary); }
+.chat-input-row {
+  display: flex;
+  gap: 0.5rem;
+}
+.chat-input-row input {
+  flex: 1;
+  padding: 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+/* ========== Адаптив: мобильный ========== */
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 100;
+    transform: translateX(-100%);
+    transition: transform 0.2s;
+  }
+  .sidebar.open {
+    transform: translateX(0);
+  }
+  .sidebar-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 99;
+    display: none;
+  }
+  .sidebar-overlay.visible { display: block; }
+  .btn-menu { display: block; }
+  .main-wrap { margin-left: 0; }
+}
+
+/* ========== Утилиты ========== */
+.empty-state {
+  text-align: center;
+  color: var(--text-secondary);
+  padding: 2rem 1rem;
+}
+.badge {
+  display: inline-block;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.75rem;
+  border-radius: 6px;
+  background: rgba(213,0,50,0.12);
+  color: var(--narxoz-red);
+}
+.grid-2 { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
+
+.attachments-list { margin-top: 0.5rem; }
+.attachment-item { font-size: 0.9rem; margin: 0.25rem 0; padding: 0.5rem; background: #f9f9f9; border-radius: 6px; }
+.forum-topic-body { white-space: pre-wrap; margin: 0.5rem 0; }
+
+.director-card .director-header { display: flex; align-items: center; gap: 1rem; margin-top: 0.5rem; }
+.director-avatar { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; }
+.director-avatar-placeholder { width: 80px; height: 80px; border-radius: 50%; background: rgba(213,0,50,0.15); display: flex; align-items: center; justify-content: center; font-size: 2rem; }
+.director-name { font-size: 1.2rem; color: var(--narxoz-dark); }
+
+.map-placeholder { margin-top: 1rem; padding: 3rem; background: #f0f0f0; border-radius: 8px; text-align: center; color: var(--text-secondary); }
+
+/* Нижняя навигация (мобильный) */
+.bottom-nav { display: none; position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg-card); border-top: 1px solid var(--border); z-index: 98; padding: 0.25rem 0; }
+.bottom-nav .nav-inner { display: flex; justify-content: space-around; max-width: 100%; overflow-x: auto; }
+.bottom-nav .nav-item { flex-direction: column; padding: 0.4rem 0.5rem; font-size: 0.7rem; border-left: none; min-width: 56px; }
+.bottom-nav .nav-item span:first-child { font-size: 1.2rem; margin-bottom: 0.15rem; }
+@media (max-width: 768px) {
+  .bottom-nav { display: block; }
+  .content { padding-bottom: 70px; }
+}
+@media (min-width: 769px) {
+  .bottom-nav { display: none !important; }
+}

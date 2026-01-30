@@ -10,6 +10,15 @@ vendor/
 .env
 .env.local
 *.log
+uploads/
+
+# Flutter (nc_app)
+nc_app/.dart_tool/
+nc_app/.packages
+nc_app/build/
+nc_app/*.iml
+nc_app/.flutter-plugins
+nc_app/.flutter-plugins-dependencies
 
 # IDE / OS
 .idea/

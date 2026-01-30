@@ -7,10 +7,17 @@ import (
 )
 
 // RequireAuth проверяет наличие валидного JWT и кладёт userID, role, email в контекст запроса (заголовки для следующих handlers).
+// Для WebSocket поддерживается токен в query: ?token=... (браузер не отправляет заголовки при апгрейде).
 func RequireAuth(secret string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			auth := r.Header.Get("Authorization")
+			if auth == "" {
+				if token := r.URL.Query().Get("token"); token != "" {
+					auth = "Bearer " + token
+					r.Header.Set("Authorization", auth)
+				}
+			}
 			if auth == "" {
 				http.Error(w, `{"error":"missing Authorization header"}`, http.StatusUnauthorized)
 				return
