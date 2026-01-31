@@ -1255,7 +1255,7 @@ function loadMap() {
     document.getElementById('content').innerHTML = `
       <div class="card">
         <h3>Карта здания</h3>
-        <p class="meta">Адрес: ул. Жандосова, 55, г. Алматы, Казахстан, 050035.</p>
+        <p class="meta">Адрес: 10-й микрорайон, 7а/2, г. Алматы, Казахстан, 050035.</p>
         <div class="map-placeholder">
           ${imageUrl ? `<img src="${API_BASE}${imageUrl}" alt="Карта" style="max-width:100%;border-radius:2px">` : ''}
           <p>${escapeHtml(content)}</p>
@@ -1285,7 +1285,7 @@ function loadMap() {
     document.getElementById('content').innerHTML = `
       <div class="card">
         <h3>Карта здания</h3>
-        <p class="meta">Адрес: ул. Жандосова, 55, г. Алматы, Казахстан, 050035.</p>
+        <p class="meta">Адрес: 10-й микрорайон, 7а/2, г. Алматы, Казахстан, 050035.</p>
         <div class="map-placeholder"><span>Карта и план эвакуации</span></div>
       </div>
     `;
