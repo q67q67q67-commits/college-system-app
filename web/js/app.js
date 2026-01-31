@@ -243,7 +243,7 @@ function loadGrades() {
     document.getElementById('content').innerHTML = `
       <div class="card">
         <h3>Журнал оценок</h3>
-        <p><strong>Средний балл (GPA):</strong> ${gpa}</p>
+        <p><strong>Средний балл:</strong> ${gpa}</p>
         <p class="meta">Оценки по 100-балльной шкале</p>
         ${Array.isArray(list) && list.length
           ? list.map(g => `

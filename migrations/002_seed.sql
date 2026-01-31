@@ -3,42 +3,49 @@
 
 -- Группы (по специальностям с сайта колледжа)
 INSERT INTO groups (name, description, academic_year) VALUES
-('Банк-1', 'Банковское и страховое дело, 1 курс', '2024-2025'),
-('Учёт-1', 'Учёт и аудит, 1 курс', '2024-2025'),
-('ПО-1', 'Программное обеспечение, 1 курс', '2024-2025'),
-('Менеджмент-1', 'Менеджмент, 1 курс', '2024-2025');
+('БҚ-331', 'Программное обеспечение, 3 курс', '2025-2026'),
+('БҚ-332', 'Программное обеспечение, 3 курс', '2025-2026'),
+('ПО-331', 'Программное обеспечение, 3 курс', '2025-2026'),
+('МНК-131', 'Менеджмент, 1 курс', '2025-2026');
 
 -- Пользователи: директор, преподаватели, студенты (password_hash = bcrypt('password123'))
 -- Используем pgcrypto: crypt('password123', gen_salt('bf'))
 INSERT INTO users (email, password_hash, role, full_name, phone, language) VALUES
-('director@nc.kz', crypt('password123', gen_salt('bf')), 'director', 'Абайдуллаев Мақсат Серікболұлы', '+77068080002', 'ru'),
-('admin@nc.kz', crypt('password123', gen_salt('bf')), 'admin', 'Администратор Системы', NULL, 'ru'),
-('teacher1@nc.kz', crypt('password123', gen_salt('bf')), 'teacher', 'Иванова Мария Петровна', NULL, 'ru'),
-('teacher2@nc.kz', crypt('password123', gen_salt('bf')), 'teacher', 'Сидоров Алексей Николаевич', NULL, 'ru'),
-('student1@nc.kz', crypt('password123', gen_salt('bf')), 'student', 'Козлов Артём', NULL, 'ru'),
-('student2@nc.kz', crypt('password123', gen_salt('bf')), 'student', 'Нурланова Айгуль', NULL, 'ru'),
-('student3@nc.kz', crypt('password123', gen_salt('bf')), 'student', 'Петров Дмитрий', NULL, 'ru'),
-('student4@nc.kz', crypt('password123', gen_salt('bf')), 'student', 'Касымова Дана', NULL, 'ru'),
-('student5@nc.kz', crypt('password123', gen_salt('bf')), 'student', 'Омаров Нурлан', NULL, 'ru');
+('abaidullayev@college-narxoz.kz', crypt('123', gen_salt('bf')), 'director', 'Абайдуллаев Мақсат Серікболұлы', '+77068080002', 'ru'),
+('admin@college-narxoz.kz', crypt('123', gen_salt('bf')), 'admin', 'Администратор', NULL, 'ru'),
+('zhubanov@college-narxoz.kz', crypt('123', gen_salt('bf')), 'teacher', 'Жубанов Айбек', NULL, 'ru'),
+('nurbakhyt@college-narxoz.kz', crypt('123', gen_salt('bf')), 'teacher', 'Жанысбай Нурбахыт', NULL, 'ru'),
+('nabdugapparov@college-narxoz.kz', crypt('123', gen_salt('bf')), 'student', 'Абдугаппаров Нурамир', NULL, 'ru'),
+('aaskar@college-narxoz.kz', crypt('123', gen_salt('bf')), 'student', 'Аскар Алихан', NULL, 'ru'),
+('anazar@college-narxoz.kz', crypt('123', gen_salt('bf')), 'student', 'Назар Алихан', NULL, 'ru'),
+('mokilbek@college-narxoz.kz', crypt('123', gen_salt('bf')), 'student', 'Өкілбек Мадина', NULL, 'ru'),
+('ssidaleev@college-narxoz.kz', crypt('123', gen_salt('bf')), 'student', 'Сидалеев Саид', NULL, 'ru');
 
 -- Связь пользователь — группа (студенты в группах, кураторы)
--- group id: 1 Банк-1, 2 Учёт-1, 3 ПО-1, 4 Менеджмент-1
+-- group id: 1 БҚ-331, 2 БҚ-332, 3 ПО-331, 4 МНК-131
 -- user id: 1 director, 2 admin, 3-4 teachers, 5-9 students
 INSERT INTO user_groups (user_id, group_id, is_curator) VALUES
-(5, 1, false), (6, 1, false), (7, 2, false), (8, 2, false), (9, 3, false),
-(3, 1, true), (3, 2, true), (4, 3, true), (4, 4, true);
+(5, 1, false), 
+(8, 1, false), 
+(6, 2, false), 
+(7, 2, false), 
+(9, 3, false),
+(3, 1, true), 
+(3, 2, true), 
+(4, 3, true),
+(4, 4, true);
 
 -- Расписание (пн=1 .. вс=7)
 INSERT INTO schedules (group_id, teacher_id, subject, room, day_of_week, start_time, end_time, academic_period) VALUES
-(1, 3, 'Основы банковского дела', '101', 1, '09:00', '10:30', '2024-2025'),
-(1, 3, 'Финансовая математика', '101', 1, '10:45', '12:15', '2024-2025'),
-(2, 3, 'Бухгалтерский учёт', '102', 2, '09:00', '10:30', '2024-2025'),
-(3, 4, 'Программирование на Python', '201', 1, '14:00', '15:30', '2024-2025'),
-(3, 4, 'Базы данных', '201', 3, '09:00', '10:30', '2024-2025');
+(1, 4, 'Управление компьютером', '101', 1, '08:00', '08:45', '2025-2026'),
+(1, 4, 'Программирование на высокоуровневых языках', '101', 1, '08:50', '09:35', '2025-2026'),
+(2, 3, 'Программирование микроконтроллеров', '102', 1, '08:00', '08:45', '2025-2026'),
+(2, 4, 'Технология программирования', '201', 1, '09:40', '10:25', '2025-2026'),
+(3, 3, 'Основы искусственного интеллекта', '312', 1, '11:05', '11:50', '2025-2026');
 
 -- Дополнения к парам (ДЗ)
 INSERT INTO schedule_attachments (schedule_id, title, body, attachment_type) VALUES
-(1, 'ДЗ №1', 'Прочитать главу 1-2 учебника, задачи 1-5', 'homework'),
+(1, 'ДЗ №1', 'Скачать и установить Cisco Packet Tracer 7.0', 'homework'),
 (4, 'Лаб. работа 1', 'Написать программу «Калькулятор»', 'homework');
 
 -- Оценки (user_id 5,6,7 — студенты; schedule_id 1,2,3,4,5)
@@ -55,7 +62,8 @@ INSERT INTO forum_posts (parent_id, author_id, is_anonymous, title, body) VALUES
 (NULL, 5, false, 'Вопрос по сессии', 'Когда расписание экзаменов для Банк-1?'),
 (NULL, 7, true, 'Обсуждение мероприятия', 'Кто идёт на встречу с Popeyes?');
 INSERT INTO forum_posts (parent_id, author_id, is_anonymous, title, body) VALUES
-(1, 3, false, NULL, 'Расписание выложат на следующей неделе.');
+(1, 3, false, NULL, 'Расписание выложат на следующей неделе.'),
+(2, 5, false, NULL, 'Я тоже хочу на встречу с Popeyes.');
 
 -- Библиотека: книги и экземпляры
 INSERT INTO library_books (title, author, isbn, has_physical, total_copies) VALUES
