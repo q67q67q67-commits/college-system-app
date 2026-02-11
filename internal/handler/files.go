@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"fmt"
 
 	"github.com/narxoz-college/nc/internal/repository"
 )
@@ -118,3 +119,26 @@ func (h *FilesHandler) ServeDelete(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
+// ServeDownload: GET /api/files/{id}/download — скачать файл пользователя.
+func (h *FilesHandler) ServeDownload(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
+		return
+	}
+	idStr := r.PathValue("id")
+	id, _ := strconv.ParseInt(idStr, 10, 64)
+	if id == 0 {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "id required"})
+		return
+	}
+	userID := userIDFromRequest(r)
+	path, err := repository.GetUserFilePath(id, userID)
+	if err != nil || path == "" {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "not found"})
+		return
+	}
+	fullPath := filepath.Join(h.UploadPath, path)
+	filename := filepath.Base(fullPath)
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", filename))
+	http.ServeFile(w, r, fullPath)
+}

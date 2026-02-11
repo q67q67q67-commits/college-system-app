@@ -37,6 +37,7 @@ func run(args []string) error {
 	eventsHandler := &handler.EventsHandler{}
 	homeworkHandler := &handler.HomeworkHandler{}
 	filesHandler := &handler.FilesHandler{UploadPath: cfg.UploadPath}
+	profileHandler := &handler.ProfileHandler{}
 
 	chatHub := chat.NewHub()
 	go chatHub.Run()
@@ -73,7 +74,13 @@ func run(args []string) error {
 	mux.Handle("GET /api/files", requireAuth(http.HandlerFunc(filesHandler.ServeList)))
 	mux.Handle("POST /api/files/upload", requireAuth(http.HandlerFunc(filesHandler.ServeUpload)))
 	mux.Handle("DELETE /api/files/{id}", requireAuth(http.HandlerFunc(filesHandler.ServeDelete)))
+	mux.Handle("GET /api/files/{id}/download", requireAuth(http.HandlerFunc(filesHandler.ServeDownload)))
 	mux.Handle("GET /api/chat/ws", requireAuth(http.HandlerFunc(chatWS)))
+
+	// Профиль текущего пользователя
+	mux.Handle("GET /api/profile", requireAuth(http.HandlerFunc(profileHandler.ServeGetProfile)))
+	mux.Handle("PUT /api/profile", requireAuth(http.HandlerFunc(profileHandler.ServeUpdateProfile)))
+	mux.Handle("PUT /api/profile/password", requireAuth(http.HandlerFunc(profileHandler.ServeChangePassword)))
 
 	// Только преподаватель: оценки, ДЗ
 	mux.Handle("POST /api/grades", requireTeacher(http.HandlerFunc(gradesHandler.ServeCreateGrade)))
@@ -89,5 +96,19 @@ func run(args []string) error {
 	mux.Handle("DELETE /api/events/{id}", requireAdminDirector(http.HandlerFunc(eventsHandler.ServeDelete)))
 
 	log.Printf("api: listening on %s", cfg.Addr)
-	return http.ListenAndServe(cfg.Addr, mux)
+	return http.ListenAndServe(cfg.Addr, withCORS(mux))
+}
+
+// withCORS добавляет CORS-заголовки для запросов с фронтенда.
+func withCORS(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type")
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }

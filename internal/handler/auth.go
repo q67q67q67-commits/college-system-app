@@ -56,6 +56,13 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"error":"invalid email or password"}`, http.StatusUnauthorized)
 		return
 	}
+	// Проверка доступа после ухода: если left_at задан и прошло > 1 года — вход запрещён.
+	if u.LeftAt.Valid {
+		if time.Since(u.LeftAt.Time) > 365*24*time.Hour {
+			http.Error(w, `{"error":"access expired after leaving college"}`, http.StatusForbidden)
+			return
+		}
+	}
 	if err := bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(req.Password)); err != nil {
 		http.Error(w, `{"error":"invalid email or password"}`, http.StatusUnauthorized)
 		return
